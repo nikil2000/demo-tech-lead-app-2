@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech-Lead Partner App - SLT</title>
+    <link rel="stylesheet" href="partner-app-styles.css">
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div class="screen active" id="loginScreen">
+        <div class="login-container">
+            <div class="logo-container">
+                <!-- TODO: Replace 'slt-logo.png' with actual SLT logo (2:1 ratio) -->
+                <img src="slt-logo.png" alt="SLT Logo" class="logo">
+                <h1 class="app-title">Tech-Lead Partner</h1>
+                <p class="app-subtitle">Job Management System</p>
+            </div>
+
+            <div class="login-card">
+                <div class="card-glow"></div>
+                <h2>Welcome Back</h2>
+                <p class="login-subtitle">Sign in to manage your jobs</p>
+
+                <form class="login-form" onsubmit="return login(event)">
+                    <div class="input-group">
+                        <div class="input-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <input type="text" placeholder="NVQ-4 Number or Mobile" required>
+                    </div>
+
+                    <div class="input-group">
+                        <div class="input-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </div>
+                        <input type="password" placeholder="Password" required>
+                    </div>
+
+                    <div class="remember-forgot">
+                        <label class="checkbox-label">
+                            <input type="checkbox">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" class="forgot-link">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        <span>Sign In</span>
+                        <div class="btn-shine"></div>
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p>Don't have an account? <a href="#" class="register-link">Register Now</a></p>
+                </div>
+            </div>
+
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div class="screen" id="dashboardScreen">
+        <div class="navbar">
+            <div class="nav-left">
+                <!-- TODO: Replace 'slt-logo-small.png' with actual SLT logo (2:1 ratio) -->
+                <img src="slt-logo-small.png" alt="SLT" class="nav-logo">
+            </div>
+            <div class="nav-center">
+                <h2>My Jobs</h2>
+            </div>
+            <div class="nav-right">
+                <button class="icon-btn notification-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-badge">3</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="dashboard-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card stat-card-1">
+                    <div class="stat-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Active Jobs</p>
+                        <h3 class="stat-value">5</h3>
+                    </div>
+                    <div class="stat-glow"></div>
+                </div>
+
+                <div class="stat-card stat-card-2">
+                    <div class="stat-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Pending Approval</p>
+                        <h3 class="stat-value">2</h3>
+                    </div>
+                    <div class="stat-glow"></div>
+                </div>
+
+                <div class="stat-card stat-card-3">
+                    <div class="stat-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Completed</p>
+                        <h3 class="stat-value">24</h3>
+                    </div>
+                    <div class="stat-glow"></div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="tab-btn active" onclick="filterJobs('all')">All Jobs</button>
+                <button class="tab-btn" onclick="filterJobs('assigned')">Assigned</button>
+                <button class="tab-btn" onclick="filterJobs('progress')">In Progress</button>
+                <button class="tab-btn" onclick="filterJobs('pending')">Pending</button>
+            </div>
+
+            <!-- Job Cards -->
+            <div class="jobs-container">
+                <!-- Job Card 1 - Assigned -->
+                <div class="job-card" data-status="assigned" onclick="showJobDetails(1)">
+                    <div class="job-header">
+                        <div class="job-id">
+                            <span class="job-label">Job ID</span>
+                            <span class="job-number">#JOB-2024-001</span>
+                        </div>
+                        <span class="job-status status-assigned">Assigned</span>
+                    </div>
+
+                    <h3 class="job-title">CCTV Camera Installation</h3>
+                    <p class="job-location">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Colombo 07, Galle Road
+                    </p>
+
+                    <div class="job-details-grid">
+                        <div class="job-detail">
+                            <span class="detail-label">Payment</span>
+                            <span class="detail-value">LKR 15,000</span>
+                        </div>
+                        <div class="job-detail">
+                            <span class="detail-label">Deadline</span>
+                            <span class="detail-value">Dec 25, 2024</span>
+                        </div>
+                    </div>
+
+                    <div class="job-actions">
+                        <button class="btn-accept" onclick="acceptJob(event, 1)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Accept Job
+                        </button>
+                        <button class="btn-issue" onclick="raiseIssue(event, 1)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            Issue
+                        </button>
+                    </div>
+
+                    <div class="card-shimmer"></div>
+                </div>
+
+                <!-- Job Card 2 - In Progress -->
+                <div class="job-card" data-status="progress" onclick="showJobDetails(2)">
+                    <div class="job-header">
+                        <div class="job-id">
+                            <span class="job-label">Job ID</span>
+                            <span class="job-number">#JOB-2024-002</span>
+                        </div>
+                        <span class="job-status status-progress">In Progress</span>
+                    </div>
+
+                    <h3 class="job-title">Wi-Fi Mesh Installation</h3>
+                    <p class="job-location">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Kandy, Peradeniya Road
+                    </p>
+
+                    <div class="job-details-grid">
+                        <div class="job-detail">
+                            <span class="detail-label">Payment</span>
+                            <span class="detail-value">LKR 12,500</span>
+                        </div>
+                        <div class="job-detail">
+                            <span class="detail-label">Deadline</span>
+                            <span class="detail-value">Dec 24, 2024</span>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%"></div>
+                    </div>
+                    <p class="progress-text">65% Complete</p>
+
+                    <div class="job-actions">
+                        <button class="btn-complete" onclick="completeJob(event, 2)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            Mark Complete
+                        </button>
+                    </div>
+
+                    <div class="card-shimmer"></div>
+                </div>
+
+                <!-- Job Card 3 - Pending Approval -->
+                <div class="job-card" data-status="pending" onclick="showJobDetails(3)">
+                    <div class="job-header">
+                        <div class="job-id">
+                            <span class="job-label">Job ID</span>
+                            <span class="job-number">#JOB-2024-003</span>
+                        </div>
+                        <span class="job-status status-pending">Pending Approval</span>
+                    </div>
+
+                    <h3 class="job-title">PABX Installation</h3>
+                    <p class="job-location">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Gampaha, Negombo
+                    </p>
+
+                    <div class="job-details-grid">
+                        <div class="job-detail">
+                            <span class="detail-label">Payment</span>
+                            <span class="detail-value">LKR 20,000</span>
+                        </div>
+                        <div class="job-detail">
+                            <span class="detail-label">Submitted</span>
+                            <span class="detail-value">Dec 22, 2024</span>
+                        </div>
+                    </div>
+
+                    <div class="pending-indicator">
+                        <div class="pulse-dot"></div>
+                        <span>Waiting for admin review...</span>
+                    </div>
+
+                    <div class="card-shimmer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="nav-item active">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Home</span>
+            </button>
+            <button class="nav-item" onclick="showEarnings()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <span>Earnings</span>
+            </button>
+            <button class="nav-item" onclick="showProfile()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Profile</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="partner-app-script.js"></script>
+</body>
+
+</html>
