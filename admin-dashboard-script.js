@@ -365,9 +365,137 @@ function showCreateJobModal() {
         return;
     }
 
-    showNotification('Job creation form - Coming soon in full version', 'info');
-    // In real app, would open modal with job creation form
-    // When job is created, would call: logJobAction('create', jobId, { details });
+    // Show modal
+    const modal = document.getElementById('createJobModal');
+    if (modal) {
+        modal.classList.add('active');
+
+        // Reset form
+        document.getElementById('createJobForm').reset();
+
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('jobDeadline').min = today;
+    }
+}
+
+/**
+ * Close create job modal
+ */
+function closeCreateJobModal() {
+    const modal = document.getElementById('createJobModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.getElementById('createJobForm').reset();
+    }
+}
+
+/**
+ * Handle job creation form submission
+ */
+function handleCreateJob(event) {
+    event.preventDefault();
+
+    // Get form values
+    const serviceType = document.getElementById('jobServiceType').value;
+    const location = document.getElementById('jobLocation').value;
+    const region = document.getElementById('jobRegion').value;
+    const payment = document.getElementById('jobPayment').value;
+    const deadline = document.getElementById('jobDeadline').value;
+    const description = document.getElementById('jobDescription').value;
+
+    // Generate job ID (in real app, would come from backend)
+    const jobId = `JOB-2024-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+
+    // Format payment
+    const formattedPayment = `LKR ${parseInt(payment).toLocaleString()}`;
+
+    // Format deadline
+    const deadlineDate = new Date(deadline);
+    const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    // Create job object
+    const newJob = {
+        id: jobId,
+        serviceType: serviceType,
+        location: location,
+        region: region,
+        payment: formattedPayment,
+        deadline: formattedDeadline,
+        partner: 'Unassigned',
+        description: description,
+        status: 'assigned',
+        createdAt: new Date().toISOString(),
+        createdBy: getCurrentUser().name
+    };
+
+    // Log job creation
+    logJobAction('create', jobId, {
+        serviceType,
+        location,
+        region,
+        payment: formattedPayment,
+        createdBy: getCurrentUser().name
+    });
+
+    // Add job to the table
+    addJobToTable(newJob);
+
+    // Close modal
+    closeCreateJobModal();
+
+    // Show success notification
+    showNotification(`Job ${jobId} created successfully!`, 'success');
+
+    // In real app, would save to backend and refresh job list
+    console.log('New job created:', newJob);
+
+    return false;
+}
+
+/**
+ * Add a job to the jobs table
+ */
+function addJobToTable(job) {
+    const tbody = document.querySelector('#jobsSection table tbody');
+    if (!tbody) return;
+
+    // Create new row
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><span class="job-id-link">#${job.id}</span></td>
+        <td>${job.serviceType}</td>
+        <td>${job.location}</td>
+        <td>${job.partner}</td>
+        <td><span class="status-badge status-assigned">Assigned</span></td>
+        <td>${job.payment}</td>
+        <td>
+            <button class="btn-icon" title="View Details">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+            </button>
+        </td>
+    `;
+
+    // Add animation
+    row.style.opacity = '0';
+    row.style.transform = 'translateY(-10px)';
+
+    // Insert at the top of the table
+    tbody.insertBefore(row, tbody.firstChild);
+
+    // Animate in
+    setTimeout(() => {
+        row.style.transition = 'all 0.3s ease';
+        row.style.opacity = '1';
+        row.style.transform = 'translateY(0)';
+    }, 10);
 }
 
 // === STATS UPDATE ===
@@ -762,7 +890,9 @@ function showCreateUserModal() {
         const regionGroup = document.getElementById('regionGroup');
         const regionSelect = document.getElementById('newUserRegion');
 
-        if (this.value === ROLES.REGIONAL_MANAGER) {
+        if (this.value === ROLES.REGIONAL_MANAGER ||
+            this.value === ROLES.TECH_LEAD_PARTNER ||
+            this.value === ROLES.BUSINESS_SUPPORT) {
             regionGroup.style.display = 'block';
             regionSelect.required = true;
         } else {
@@ -1159,9 +1289,11 @@ function handleCreateUser(event) {
         return false;
     }
 
-    // Validate region for Regional Managers
-    if (role === ROLES.REGIONAL_MANAGER && !region) {
-        showNotification('Please select a region for Regional Manager', 'error');
+    // Validate region for Regional Managers, Tech Lead Partners, and Business Support Team
+    if ((role === ROLES.REGIONAL_MANAGER ||
+        role === ROLES.TECH_LEAD_PARTNER ||
+        role === ROLES.BUSINESS_SUPPORT) && !region) {
+        showNotification('Please select a region', 'error');
         return false;
     }
 
@@ -1452,3 +1584,51 @@ window.confirmResetPassword = confirmResetPassword;
 window.closeResetPasswordModal = closeResetPasswordModal;
 window.resetUserPassword = resetUserPassword;
 
+// === BACK TO ROLE SELECTION ===
+function backToRoleSelection() {
+    // Show confirmation dialog
+    const confirmed = confirm('Are you sure you want to return to role selection? You will be logged out.');
+
+    if (!confirmed) {
+        return;
+    }
+
+    // Clear current user session
+    clearCurrentUser();
+
+    // Navigate to index.html (role selection page)
+    window.location.href = 'index.html';
+}
+
+// === LOGOUT ===
+function logout() {
+    // Show confirmation dialog
+    const confirmed = confirm('Are you sure you want to logout?');
+
+    if (!confirmed) {
+        return;
+    }
+
+    // Log logout activity
+    logLogout();
+
+    // Clear current user session
+    clearCurrentUser();
+
+    // Show notification
+    showNotification('Logging out...', 'info');
+
+    // Return to login screen after a short delay
+    setTimeout(() => {
+        showScreen('adminLoginScreen');
+
+        // Reset login form
+        document.getElementById('adminUsername').value = '';
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('adminRole').value = '';
+    }, 1000);
+}
+
+// Make functions globally accessible
+window.backToRoleSelection = backToRoleSelection;
+window.logout = logout;

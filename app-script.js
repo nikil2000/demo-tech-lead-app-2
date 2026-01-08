@@ -10,6 +10,7 @@ const AppState = {
             id: 1,
             title: 'CCTV Camera Installation',
             location: 'Colombo 07, Galle Road',
+            region: 'Western Province',
             payment: 'LKR 15,000',
             deadline: 'Dec 25, 2024',
             status: 'assigned',
@@ -21,6 +22,7 @@ const AppState = {
             id: 2,
             title: 'Wi-Fi Mesh Installation',
             location: 'Kandy, Peradeniya Road',
+            region: 'Central Province',
             payment: 'LKR 12,500',
             deadline: 'Dec 26, 2024',
             status: 'progress',
@@ -33,6 +35,7 @@ const AppState = {
             id: 3,
             title: 'PABX Installation',
             location: 'Gampaha, Negombo',
+            region: 'Western Province',
             payment: 'LKR 20,000',
             deadline: 'Dec 24, 2024',
             status: 'pending',
@@ -78,18 +81,59 @@ function backToRoleSelection() {
 function partnerLogin(event) {
     event.preventDefault();
 
+    const username = document.getElementById('partnerUsername').value;
+    const password = document.getElementById('partnerPassword').value;
+
     const button = event.target.querySelector('.btn-primary');
     button.innerHTML = '<span>Signing In...</span>';
     button.style.opacity = '0.7';
 
     setTimeout(() => {
+        // Load all users from storage
+        const usersJson = localStorage.getItem('platformUsers');
+        const allUsers = usersJson ? JSON.parse(usersJson) : [];
+
+        // Find user by username or email
+        const user = allUsers.find(u =>
+            (u.username === username || u.email === username) &&
+            u.password === password &&
+            u.role === 'tech_lead_partner'
+        );
+
+        if (!user) {
+            // Authentication failed
+            button.innerHTML = '<span>Sign In</span><div class="btn-shine"></div>';
+            button.style.opacity = '1';
+
+            // Provide helpful error message
+            const userExists = allUsers.find(u =>
+                (u.username === username || u.email === username) &&
+                u.role === 'tech_lead_partner'
+            );
+
+            if (!userExists) {
+                showNotification('Tech Lead Partner account not found. Please check your username.', 'error');
+            } else if (userExists && userExists.password !== password) {
+                showNotification('Incorrect password. Please try again.', 'error');
+            } else {
+                showNotification('Invalid credentials. Please try again.', 'error');
+            }
+            return false;
+        }
+
+        // Authentication successful
+        // Store user in session
+        sessionStorage.setItem('currentPartner', JSON.stringify(user));
+        sessionStorage.setItem('partnerRole', user.role);
+
+        // Show dashboard
         showScreen('partnerDashboardScreen');
         button.innerHTML = '<span>Sign In</span><div class="btn-shine"></div>';
         button.style.opacity = '1';
 
         loadPartnerJobs();
         updatePartnerStats();
-        showNotification('Welcome back! You have job updates.', 'success');
+        showNotification(`Welcome back, ${user.name}!`, 'success');
     }, 1500);
 
     return false;
@@ -116,7 +160,22 @@ function loadPartnerJobs() {
     const container = document.getElementById('partnerJobsContainer');
     container.innerHTML = '';
 
-    AppState.jobs.forEach((job, index) => {
+    // Get current partner's region from session
+    const currentPartnerJson = sessionStorage.getItem('currentPartner');
+    const currentPartner = currentPartnerJson ? JSON.parse(currentPartnerJson) : null;
+    const partnerRegion = currentPartner ? currentPartner.region : null;
+
+    // Filter jobs by partner's region
+    const filteredJobs = partnerRegion
+        ? AppState.jobs.filter(job => job.region === partnerRegion)
+        : AppState.jobs;
+
+    if (filteredJobs.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No jobs available in your region</p>';
+        return;
+    }
+
+    filteredJobs.forEach((job, index) => {
         const jobCard = createPartnerJobCard(job);
         jobCard.style.opacity = '0';
         container.appendChild(jobCard);
@@ -567,6 +626,7 @@ function createJob(event) {
         id: newId,
         title: formData.get('title'),
         location: formData.get('location'),
+        region: formData.get('region'),
         payment: formattedPayment,
         deadline: formattedDeadline,
         status: 'assigned',
@@ -813,6 +873,16 @@ function logout() {
         // Clear current role
         AppState.currentRole = null;
 
+        // Clear partner session data
+        sessionStorage.removeItem('currentPartner');
+        sessionStorage.removeItem('partnerRole');
+
+        // Reset partner login form
+        const partnerUsername = document.getElementById('partnerUsername');
+        const partnerPassword = document.getElementById('partnerPassword');
+        if (partnerUsername) partnerUsername.value = '';
+        if (partnerPassword) partnerPassword.value = '';
+
         // Reset to role selection screen
         showScreen('roleSelectionScreen');
 
@@ -931,6 +1001,34 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+// === LOGOUT ===
+function logout() {
+    // Show confirmation dialog
+    const confirmed = confirm('Are you sure you want to logout?');
+
+    if (!confirmed) {
+        return;
+    }
+
+    // Clear session data
+    sessionStorage.removeItem('currentPartner');
+    sessionStorage.removeItem('partnerRole');
+
+    // Show notification
+    showNotification('Logging out...', 'info');
+
+    // Return to role selection after a short delay
+    setTimeout(() => {
+        showScreen('roleSelectionScreen');
+
+        // Reset login form
+        const loginForm = document.querySelector('#partnerLoginScreen form');
+        if (loginForm) {
+            loginForm.reset();
+        }
+    }, 1000);
 }
 
 // === INITIALIZE ===

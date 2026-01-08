@@ -79,7 +79,7 @@
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </div>
-                        <input type="text" placeholder="NVQ Number or Email" required>
+                        <input type="text" id="partnerUsername" placeholder="NVQ Number or Email" required>
                     </div>
 
                     <div class="input-group">
@@ -90,7 +90,7 @@
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
                         </div>
-                        <input type="password" placeholder="Password" required>
+                        <input type="password" id="partnerPassword" placeholder="Password" required>
                     </div>
 
                     <button type="submit" class="btn-primary">
@@ -472,10 +472,28 @@
 
                         <div class="form-row">
                             <div class="form-group">
+                                <label>Region *</label>
+                                <select name="region" required>
+                                    <option value="">Select Region</option>
+                                    <option value="Western Province">Western Province</option>
+                                    <option value="Central Province">Central Province</option>
+                                    <option value="Southern Province">Southern Province</option>
+                                    <option value="Northern Province">Northern Province</option>
+                                    <option value="Eastern Province">Eastern Province</option>
+                                    <option value="North Western Province">North Western Province</option>
+                                    <option value="North Central Province">North Central Province</option>
+                                    <option value="Uva Province">Uva Province</option>
+                                    <option value="Sabaragamuwa Province">Sabaragamuwa Province</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Payment Amount (LKR) *</label>
                                 <input type="number" name="payment" placeholder="15000" required min="1000" step="100">
                             </div>
+                        </div>
 
+                        <div class="form-row">
                             <div class="form-group">
                                 <label>Deadline *</label>
                                 <input type="date" name="deadline" required>
