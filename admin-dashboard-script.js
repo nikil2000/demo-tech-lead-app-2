@@ -585,6 +585,396 @@ function confirmLogout() {
     }, 1000);
 }
 
+// === MY PROFILE MANAGEMENT ===
+let currentProfilePhoto = null; // Store the selected photo temporarily
+
+/**
+ * Show My Profile modal
+ */
+function showMyProfile() {
+    const user = getCurrentUser();
+    if (!user) {
+        showNotification('No user logged in', 'error');
+        return;
+    }
+
+    // Populate view mode
+    document.getElementById('myProfileName').textContent = user.name;
+    document.getElementById('myProfileRole').textContent = ROLE_NAMES[user.role] || user.role;
+    document.getElementById('myProfileEmail').textContent = user.email;
+    document.getElementById('myProfileUserId').textContent = user.id;
+    document.getElementById('myProfileCreatedAt').textContent = new Date(user.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    // Show/hide region based on role
+    const regionRow = document.getElementById('myProfileRegionRow');
+    if (user.region) {
+        regionRow.style.display = 'flex';
+        document.getElementById('myProfileRegion').textContent = user.region;
+    } else {
+        regionRow.style.display = 'none';
+    }
+
+    // Display profile photo
+    const photoContainer = document.getElementById('myProfilePhoto');
+    if (user.profilePhoto) {
+        photoContainer.innerHTML = `<img src="${user.profilePhoto}" alt="${user.name}">`;
+    } else {
+        photoContainer.innerHTML = `
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        `;
+    }
+
+    // Show modal in view mode
+    document.getElementById('myProfileViewMode').style.display = 'block';
+    document.getElementById('myProfileEditMode').style.display = 'none';
+
+    const modal = document.getElementById('myProfileModal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Close My Profile modal
+ */
+function closeMyProfileModal() {
+    const modal = document.getElementById('myProfileModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    // Reset form
+    document.getElementById('myProfileEditForm').reset();
+    currentProfilePhoto = null;
+}
+
+/**
+ * Switch to edit mode
+ */
+function switchToEditMode() {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    // Hide view mode, show edit mode
+    document.getElementById('myProfileViewMode').style.display = 'none';
+    document.getElementById('myProfileEditMode').style.display = 'block';
+
+    // Populate edit form with current photo
+    const photoPreviewPlaceholder = document.getElementById('photoPreviewPlaceholder');
+    const photoPreviewImage = document.getElementById('photoPreviewImage');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+
+    if (user.profilePhoto) {
+        photoPreviewPlaceholder.style.display = 'none';
+        photoPreviewImage.src = user.profilePhoto;
+        photoPreviewImage.style.display = 'block';
+        removePhotoBtn.style.display = 'inline-block';
+        currentProfilePhoto = user.profilePhoto;
+    } else {
+        photoPreviewPlaceholder.style.display = 'flex';
+        photoPreviewImage.style.display = 'none';
+        removePhotoBtn.style.display = 'none';
+        currentProfilePhoto = null;
+    }
+
+    // Clear password fields
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('passwordStrength').style.display = 'none';
+}
+
+/**
+ * Switch to view mode
+ */
+function switchToViewMode() {
+    document.getElementById('myProfileViewMode').style.display = 'block';
+    document.getElementById('myProfileEditMode').style.display = 'none';
+
+    // Reset form
+    document.getElementById('myProfileEditForm').reset();
+    currentProfilePhoto = null;
+}
+
+/**
+ * Handle photo selection
+ */
+function handlePhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+        showNotification('Please select a JPG, PNG, or GIF image', 'error');
+        return;
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+    if (file.size > maxSize) {
+        showNotification('Image size must be less than 2MB', 'error');
+        return;
+    }
+
+    // Read and resize image
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+            // Resize to 200x200
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+
+            // Calculate crop dimensions for square
+            const size = Math.min(img.width, img.height);
+            const x = (img.width - size) / 2;
+            const y = (img.height - size) / 2;
+
+            // Draw cropped and resized image
+            ctx.drawImage(img, x, y, size, size, 0, 0, 200, 200);
+
+            // Convert to base64
+            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.9);
+            currentProfilePhoto = resizedBase64;
+
+            // Update preview
+            const photoPreviewPlaceholder = document.getElementById('photoPreviewPlaceholder');
+            const photoPreviewImage = document.getElementById('photoPreviewImage');
+            const removePhotoBtn = document.getElementById('removePhotoBtn');
+
+            photoPreviewPlaceholder.style.display = 'none';
+            photoPreviewImage.src = resizedBase64;
+            photoPreviewImage.style.display = 'block';
+            removePhotoBtn.style.display = 'inline-block';
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Remove profile photo
+ */
+function removeProfilePhoto() {
+    currentProfilePhoto = null;
+
+    const photoPreviewPlaceholder = document.getElementById('photoPreviewPlaceholder');
+    const photoPreviewImage = document.getElementById('photoPreviewImage');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+    const fileInput = document.getElementById('profilePhotoInput');
+
+    photoPreviewPlaceholder.style.display = 'flex';
+    photoPreviewImage.style.display = 'none';
+    photoPreviewImage.src = '';
+    removePhotoBtn.style.display = 'none';
+    fileInput.value = '';
+}
+
+/**
+ * Check password strength
+ */
+function checkPasswordStrength() {
+    const password = document.getElementById('newPassword').value;
+    const strengthIndicator = document.getElementById('passwordStrength');
+    const strengthFill = document.getElementById('passwordStrengthFill');
+    const strengthText = document.getElementById('passwordStrengthText');
+
+    if (!password) {
+        strengthIndicator.style.display = 'none';
+        return;
+    }
+
+    strengthIndicator.style.display = 'block';
+
+    let strength = 0;
+    let strengthLabel = '';
+
+    // Check length
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+
+    // Check for numbers
+    if (/\d/.test(password)) strength++;
+
+    // Check for lowercase and uppercase
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+
+    // Check for special characters
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+    // Determine strength level
+    if (strength <= 2) {
+        strengthLabel = 'Weak';
+        strengthFill.className = 'password-strength-fill weak';
+        strengthText.textContent = 'Weak password';
+        strengthText.className = 'weak';
+    } else if (strength <= 4) {
+        strengthLabel = 'Medium';
+        strengthFill.className = 'password-strength-fill medium';
+        strengthText.textContent = 'Medium strength';
+        strengthText.className = 'medium';
+    } else {
+        strengthLabel = 'Strong';
+        strengthFill.className = 'password-strength-fill strong';
+        strengthText.textContent = 'Strong password';
+        strengthText.className = 'strong';
+    }
+}
+
+/**
+ * Handle profile update
+ */
+function handleMyProfileUpdate(event) {
+    event.preventDefault();
+
+    const user = getCurrentUser();
+    if (!user) {
+        showNotification('No user logged in', 'error');
+        return false;
+    }
+
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    let passwordChanged = false;
+    let photoChanged = false;
+
+    // Check if password change is requested
+    if (currentPassword || newPassword || confirmPassword) {
+        // Validate all password fields are filled
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            showNotification('Please fill in all password fields to change password', 'error');
+            return false;
+        }
+
+        // Verify current password
+        if (currentPassword !== user.password) {
+            showNotification('Current password is incorrect', 'error');
+            return false;
+        }
+
+        // Validate new password
+        if (newPassword.length < 6) {
+            showNotification('New password must be at least 6 characters', 'error');
+            return false;
+        }
+
+        if (!/\d/.test(newPassword)) {
+            showNotification('New password must contain at least one number', 'error');
+            return false;
+        }
+
+        // Check if passwords match
+        if (newPassword !== confirmPassword) {
+            showNotification('New passwords do not match', 'error');
+            return false;
+        }
+
+        // Update password
+        user.password = newPassword;
+        user.lastPasswordChange = new Date().toISOString();
+        passwordChanged = true;
+    }
+
+    // Check if photo changed
+    if (currentProfilePhoto !== user.profilePhoto) {
+        user.profilePhoto = currentProfilePhoto;
+        photoChanged = true;
+    }
+
+    // Save updated user
+    updateUserInStorage(user);
+    setCurrentUser(user);
+
+    // Update sidebar avatar if photo changed
+    if (photoChanged) {
+        updateSidebarAvatar(user.profilePhoto);
+    }
+
+    // Log the changes
+    const changes = [];
+    if (passwordChanged) changes.push('password');
+    if (photoChanged) changes.push('profile photo');
+
+    if (changes.length > 0) {
+        logProfileUpdate(changes.join(' and '));
+        showNotification(`Profile updated successfully! Changed: ${changes.join(' and ')}`, 'success');
+    } else {
+        showNotification('No changes made to profile', 'info');
+    }
+
+    // Switch back to view mode and refresh
+    setTimeout(() => {
+        closeMyProfileModal();
+        showMyProfile();
+    }, 1500);
+
+    return false;
+}
+
+/**
+ * Update user in localStorage
+ */
+function updateUserInStorage(updatedUser) {
+    const users = loadUsers();
+    const index = users.findIndex(u => u.id === updatedUser.id);
+
+    if (index !== -1) {
+        users[index] = updatedUser;
+        localStorage.setItem('slt_users', JSON.stringify(users));
+    }
+}
+
+/**
+ * Update sidebar avatar with photo
+ */
+function updateSidebarAvatar(photoUrl) {
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    if (!sidebarAvatar) return;
+
+    if (photoUrl) {
+        sidebarAvatar.innerHTML = `<img src="${photoUrl}" alt="Profile">`;
+    } else {
+        sidebarAvatar.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        `;
+    }
+}
+
+/**
+ * Log profile update activity
+ */
+function logProfileUpdate(changes) {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    logActivity({
+        action: 'PROFILE_UPDATE',
+        userId: user.id,
+        userName: user.name,
+        role: user.role,
+        details: {
+            changes: changes,
+            timestamp: new Date().toISOString()
+        },
+        message: `${user.name} updated their profile: ${changes}`
+    });
+}
+
 // === NOTIFICATIONS ===
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
@@ -703,6 +1093,9 @@ function updateUIForRole(user) {
         // Add role-specific class
         profileRole.className = 'admin-role role-' + role.replace('_', '-');
     }
+
+    // Update sidebar avatar with profile photo
+    updateSidebarAvatar(user.profilePhoto);
 
     // Hide/show navigation items based on permissions
     updateNavigationVisibility(role);
@@ -1584,51 +1977,12 @@ window.confirmResetPassword = confirmResetPassword;
 window.closeResetPasswordModal = closeResetPasswordModal;
 window.resetUserPassword = resetUserPassword;
 
-// === BACK TO ROLE SELECTION ===
-function backToRoleSelection() {
-    // Show confirmation dialog
-    const confirmed = confirm('Are you sure you want to return to role selection? You will be logged out.');
-
-    if (!confirmed) {
-        return;
-    }
-
-    // Clear current user session
-    clearCurrentUser();
-
-    // Navigate to index.html (role selection page)
-    window.location.href = 'index.html';
-}
-
-// === LOGOUT ===
-function logout() {
-    // Show confirmation dialog
-    const confirmed = confirm('Are you sure you want to logout?');
-
-    if (!confirmed) {
-        return;
-    }
-
-    // Log logout activity
-    logLogout();
-
-    // Clear current user session
-    clearCurrentUser();
-
-    // Show notification
-    showNotification('Logging out...', 'info');
-
-    // Return to login screen after a short delay
-    setTimeout(() => {
-        showScreen('adminLoginScreen');
-
-        // Reset login form
-        document.getElementById('adminUsername').value = '';
-        document.getElementById('adminPassword').value = '';
-        document.getElementById('adminRole').value = '';
-    }, 1000);
-}
-
-// Make functions globally accessible
-window.backToRoleSelection = backToRoleSelection;
-window.logout = logout;
+// My Profile functions
+window.showMyProfile = showMyProfile;
+window.closeMyProfileModal = closeMyProfileModal;
+window.switchToEditMode = switchToEditMode;
+window.switchToViewMode = switchToViewMode;
+window.handlePhotoSelect = handlePhotoSelect;
+window.removeProfilePhoto = removeProfilePhoto;
+window.checkPasswordStrength = checkPasswordStrength;
+window.handleMyProfileUpdate = handleMyProfileUpdate;

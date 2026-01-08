@@ -9,7 +9,7 @@ function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
     });
-    
+
     // Show target screen
     const targetScreen = document.getElementById(screenId);
     if (targetScreen) {
@@ -20,31 +20,31 @@ function showScreen(screenId) {
 // === LOGIN FUNCTIONALITY ===
 function login(event) {
     event.preventDefault();
-    
+
     // Get form values
     const username = event.target.querySelector('input[type="text"]').value;
     const password = event.target.querySelector('input[type="password"]').value;
-    
+
     // Simple validation (prototype only)
     if (username && password) {
         // Simulate login delay
         const button = event.target.querySelector('.btn-primary');
         button.innerHTML = '<span>Signing In...</span>';
         button.style.opacity = '0.7';
-        
+
         setTimeout(() => {
             // Show dashboard
             showScreen('dashboardScreen');
-            
+
             // Reset button
             button.innerHTML = '<span>Sign In</span><div class="btn-shine"></div>';
             button.style.opacity = '1';
-            
+
             // Show welcome notification
             showNotification('Welcome back! You have 3 new job assignments.', 'success');
         }, 1500);
     }
-    
+
     return false;
 }
 
@@ -52,15 +52,15 @@ function login(event) {
 function filterJobs(filter) {
     const jobCards = document.querySelectorAll('.job-card');
     const tabs = document.querySelectorAll('.tab-btn');
-    
+
     // Update active tab
     tabs.forEach(tab => tab.classList.remove('active'));
     event.target.classList.add('active');
-    
+
     // Filter jobs
     jobCards.forEach(card => {
         const status = card.getAttribute('data-status');
-        
+
         if (filter === 'all') {
             card.style.display = 'block';
         } else if (filter === 'assigned' && status === 'assigned') {
@@ -78,22 +78,22 @@ function filterJobs(filter) {
 // === JOB ACTIONS ===
 function acceptJob(event, jobId) {
     event.stopPropagation();
-    
+
     const button = event.target.closest('.btn-accept');
     button.innerHTML = '<span>Accepting...</span>';
     button.style.opacity = '0.7';
-    
+
     setTimeout(() => {
         showNotification(`Job #JOB-2024-00${jobId} accepted successfully!`, 'success');
-        
+
         // Update job card status
         const jobCard = event.target.closest('.job-card');
         jobCard.setAttribute('data-status', 'progress');
-        
+
         const statusBadge = jobCard.querySelector('.job-status');
         statusBadge.className = 'job-status status-progress';
         statusBadge.textContent = 'In Progress';
-        
+
         // Replace buttons with progress indicator
         const actionsDiv = jobCard.querySelector('.job-actions');
         actionsDiv.innerHTML = `
@@ -109,7 +109,7 @@ function acceptJob(event, jobId) {
                 Mark Complete
             </button>
         `;
-        
+
         // Update stats
         updateStats();
     }, 1000);
@@ -117,29 +117,29 @@ function acceptJob(event, jobId) {
 
 function raiseIssue(event, jobId) {
     event.stopPropagation();
-    
+
     showNotification(`Issue form opened for Job #JOB-2024-00${jobId}`, 'info');
     // In a real app, this would open a modal/form
 }
 
 function completeJob(event, jobId) {
     event.stopPropagation();
-    
+
     const button = event.target.closest('.btn-complete');
     button.innerHTML = '<span>Submitting...</span>';
     button.style.opacity = '0.7';
-    
+
     setTimeout(() => {
         showNotification(`Job #JOB-2024-00${jobId} submitted for approval!`, 'success');
-        
+
         // Update job card status
         const jobCard = event.target.closest('.job-card');
         jobCard.setAttribute('data-status', 'pending');
-        
+
         const statusBadge = jobCard.querySelector('.job-status');
         statusBadge.className = 'job-status status-pending';
         statusBadge.textContent = 'Pending Approval';
-        
+
         // Replace button with pending indicator
         const actionsDiv = jobCard.querySelector('.job-actions');
         actionsDiv.innerHTML = `
@@ -148,7 +148,7 @@ function completeJob(event, jobId) {
                 <span>Waiting for admin review...</span>
             </div>
         `;
-        
+
         // Update stats
         updateStats();
     }, 1500);
@@ -166,196 +166,232 @@ function showEarnings() {
     // In a real app, this would show earnings screen
 }
 
-function showProfile() {
-    showNotification('Profile screen - Coming soon in full version', 'info');
-    // In a real app, this would show profile screen
-}
 
-// === STATS UPDATE ===
-function updateStats() {
-    // Recalculate stats based on current job cards
-    const jobCards = document.querySelectorAll('.job-card');
-    let activeCount = 0;
-    let pendingCount = 0;
-    let completedCount = 24; // Base count
-    
-    jobCards.forEach(card => {
-        const status = card.getAttribute('data-status');
-        if (status === 'progress') activeCount++;
-        if (status === 'pending') pendingCount++;
-    });
-    
-    // Update stat cards with animation
-    animateValue(document.querySelector('.stat-card-1 .stat-value'), activeCount);
-    animateValue(document.querySelector('.stat-card-2 .stat-value'), pendingCount);
-}
+// === BACK TO ROLE SELECTION ===
+function backToRoleSelection() {
+    const confirmed = confirm('Are you sure you want to return to role selection? You will be logged out.');
 
-function animateValue(element, newValue) {
-    const currentValue = parseInt(element.textContent);
-    const duration = 500;
-    const steps = 20;
-    const stepValue = (newValue - currentValue) / steps;
-    let current = currentValue;
-    let step = 0;
-    
-    const timer = setInterval(() => {
-        step++;
-        current += stepValue;
-        element.textContent = Math.round(current);
-        
-        if (step >= steps) {
-            element.textContent = newValue;
-            clearInterval(timer);
-        }
-    }, duration / steps);
-}
-
-// === NOTIFICATIONS ===
-function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                ${type === 'success' ? '<polyline points="20 6 9 17 4 12"></polyline>' : 
-                  type === 'error' ? '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>' :
-                  '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>'}
-            </svg>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    // Add styles
-    const style = document.createElement('style');
-    style.textContent = `
-        .notification {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            animation: slideInRight 0.3s ease-out, slideOutRight 0.3s ease-in 2.7s;
-            max-width: 400px;
-        }
-        
-        .notification-content {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .notification-success {
-            border-left: 4px solid #10B981;
-        }
-        
-        .notification-success svg {
-            color: #10B981;
-        }
-        
-        .notification-error {
-            border-left: 4px solid #EF4444;
-        }
-        
-        .notification-error svg {
-            color: #EF4444;
-        }
-        
-        .notification-info {
-            border-left: 4px solid #3B82F6;
-        }
-        
-        .notification-info svg {
-            color: #3B82F6;
-        }
-        
-        .notification span {
-            font-size: 0.9rem;
-            color: #1F2937;
-        }
-        
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes slideOutRight {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-        }
-    `;
-    
-    // Append to document
-    if (!document.querySelector('style[data-notification-styles]')) {
-        style.setAttribute('data-notification-styles', 'true');
-        document.head.appendChild(style);
+    if (confirmed) {
+        // Navigate to index.html (role selection page)
+        window.location.href = 'index.html';
     }
-    
-    document.body.appendChild(notification);
-    
-    // Remove after animation
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
 }
 
-// === INITIALIZE ===
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Tech-Lead Partner App initialized');
-    
-    // Add smooth scroll behavior
-    document.documentElement.style.scrollBehavior = 'smooth';
-    
-    // Add loading animation to job cards
-    const jobCards = document.querySelectorAll('.job-card');
-    jobCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        setTimeout(() => {
-            card.style.opacity = '1';
-        }, 100 * index);
-    });
-});
+// === LOGOUT FUNCTIONALITY ===
+function logout() {
+    showLogoutConfirmation();
+}
 
-// === PROTOTYPE HELPERS ===
-// These functions simulate backend interactions for the prototype
+function showLogoutConfirmation() {
+    const modal = document.getElementById('logoutModal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
 
-function simulateDataLoad() {
-    // Simulate loading data from backend
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                jobs: [
-                    { id: 1, title: 'CCTV Camera Installation', status: 'assigned' },
-                    { id: 2, title: 'Wi-Fi Mesh Installation', status: 'progress' },
-                    { id: 3, title: 'PABX Installation', status: 'pending' }
-                ],
-                stats: {
-                    active: 5,
-                    pending: 2,
-                    completed: 24
-                }
-            });
-        }, 500);
-    });
+function closeLogoutModal() {
+    const modal = document.getElementById('logoutModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function confirmLogout() {
+    closeLogoutModal();
+
+    // Simple console log instead of notification to avoid dependency issues
+    console.log('Logging out...');
+
+    setTimeout(() => {
+        // Return to login screen
+        showScreen('loginScreen');
+
+        // Reset login form
+        const loginForm = document.querySelector('.login-form');
+        if (loginForm) {
+            loginForm.reset();
+        }
+    }, 500); // Reduced timeout for faster logout
+}
+
+// === PROFILE MANAGEMENT ===
+function showProfile() {
+    showMyProfile();
+}
+
+/**
+ * Show My Profile modal
+ */
+function showMyProfile() {
+    // Mock partner data (in real app, would come from logged-in user)
+    const partnerData = {
+        name: 'Kamal Silva',
+        nvq: 'NVQ-2024-1234',
+        mobile: '+94 77 123 4567',
+        region: 'Western Province',
+        password: 'partner123', // In real app, would be hashed
+        totalJobs: 24
+    };
+
+    // Populate view mode
+    document.getElementById('myProfileName').textContent = partnerData.name;
+    document.getElementById('myProfileNVQ').textContent = partnerData.nvq;
+    document.getElementById('myProfileMobile').textContent = partnerData.mobile;
+    document.getElementById('myProfileRegion').textContent = partnerData.region;
+    document.getElementById('myProfileTotalJobs').textContent = partnerData.totalJobs;
+
+    // Show modal in view mode
+    document.getElementById('myProfileViewMode').style.display = 'block';
+    document.getElementById('myProfileEditMode').style.display = 'none';
+
+    const modal = document.getElementById('myProfileModal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Close My Profile modal
+ */
+function closeMyProfileModal() {
+    const modal = document.getElementById('myProfileModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    // Reset form
+    if (document.getElementById('myProfileEditForm')) {
+        document.getElementById('myProfileEditForm').reset();
+    }
+}
+
+/**
+ * Switch to edit mode (password change)
+ */
+function switchToEditMode() {
+    // Hide view mode, show edit mode
+    document.getElementById('myProfileViewMode').style.display = 'none';
+    document.getElementById('myProfileEditMode').style.display = 'block';
+
+    // Clear password fields
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('passwordStrength').style.display = 'none';
+}
+
+/**
+ * Switch to view mode
+ */
+function switchToViewMode() {
+    document.getElementById('myProfileViewMode').style.display = 'block';
+    document.getElementById('myProfileEditMode').style.display = 'none';
+
+    // Reset form
+    document.getElementById('myProfileEditForm').reset();
+}
+
+/**
+ * Check password strength
+ */
+function checkPasswordStrength() {
+    const password = document.getElementById('newPassword').value;
+    const strengthIndicator = document.getElementById('passwordStrength');
+    const strengthFill = document.getElementById('passwordStrengthFill');
+    const strengthText = document.getElementById('passwordStrengthText');
+
+    if (!password) {
+        strengthIndicator.style.display = 'none';
+        return;
+    }
+
+    strengthIndicator.style.display = 'block';
+
+    let strength = 0;
+
+    // Check length
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+
+    // Check for numbers
+    if (/\d/.test(password)) strength++;
+
+    // Check for lowercase and uppercase
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+
+    // Check for special characters
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+    // Determine strength level
+    if (strength <= 2) {
+        strengthFill.className = 'password-strength-fill weak';
+        strengthText.textContent = 'Weak password';
+        strengthText.className = 'weak';
+    } else if (strength <= 4) {
+        strengthFill.className = 'password-strength-fill medium';
+        strengthText.textContent = 'Medium strength';
+        strengthText.className = 'medium';
+    } else {
+        strengthFill.className = 'password-strength-fill strong';
+        strengthText.textContent = 'Strong password';
+        strengthText.className = 'strong';
+    }
+}
+
+/**
+ * Handle password change
+ */
+function handlePasswordChange(event) {
+    event.preventDefault();
+
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    // Mock current password (in real app, would verify against stored password)
+    const storedPassword = 'partner123';
+
+    // Verify current password
+    if (currentPassword !== storedPassword) {
+        showNotification('Current password is incorrect', 'error');
+        return false;
+    }
+
+    // Validate new password
+    if (newPassword.length < 6) {
+        showNotification('New password must be at least 6 characters', 'error');
+        return false;
+    }
+
+    if (!/\d/.test(newPassword)) {
+        showNotification('New password must contain at least one number', 'error');
+        return false;
+    }
+
+    // Check if passwords match
+    if (newPassword !== confirmPassword) {
+        showNotification('New passwords do not match', 'error');
+        return false;
+    }
+
+    // Simulate password update
+    showNotification('Password updated successfully!', 'success');
+
+    // Switch back to view mode
+    setTimeout(() => {
+        switchToViewMode();
+    }, 1500);
+
+    return false;
 }
 
 // Export functions for use in HTML
 window.login = login;
+window.backToRoleSelection = backToRoleSelection;
+window.logout = logout;
+window.showLogoutConfirmation = showLogoutConfirmation;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
 window.filterJobs = filterJobs;
 window.acceptJob = acceptJob;
 window.raiseIssue = raiseIssue;
@@ -363,3 +399,9 @@ window.completeJob = completeJob;
 window.showJobDetails = showJobDetails;
 window.showEarnings = showEarnings;
 window.showProfile = showProfile;
+window.showMyProfile = showMyProfile;
+window.closeMyProfileModal = closeMyProfileModal;
+window.switchToEditMode = switchToEditMode;
+window.switchToViewMode = switchToViewMode;
+window.checkPasswordStrength = checkPasswordStrength;
+window.handlePasswordChange = handlePasswordChange;
