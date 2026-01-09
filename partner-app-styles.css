@@ -911,6 +911,33 @@ body {
     box-shadow: 0 6px 16px rgba(0, 102, 204, 0.3);
 }
 
+/* View Details Button (Eye Icon) */
+.btn-view-details {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(0, 102, 204, 0.1);
+    color: var(--slt-blue);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    flex-shrink: 0;
+}
+
+.btn-view-details:hover {
+    background: var(--slt-blue);
+    color: var(--white);
+    transform: scale(1.1);
+}
+
+.btn-view-details:active {
+    transform: scale(0.95);
+}
+
+
 /* Bottom Navigation */
 .bottom-nav {
     position: fixed;
@@ -1314,4 +1341,46 @@ body {
 .btn-secondary:hover {
     background: var(--light-gray);
     border-color: var(--gray);
+}
+
+/* === NOTIFICATION TOAST === */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    font-size: 0.95rem;
+    font-weight: 500;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all var(--transition-base);
+    max-width: 400px;
+    border-left: 4px solid var(--slt-blue);
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-success {
+    border-left-color: var(--status-approved);
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--status-approved);
+}
+
+.notification-error {
+    border-left-color: var(--status-rejected);
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--status-rejected);
+}
+
+.notification-info {
+    border-left-color: var(--slt-blue);
+    background: rgba(0, 102, 204, 0.1);
+    color: var(--slt-blue);
 }

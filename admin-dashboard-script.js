@@ -1947,6 +1947,92 @@ function simulateAdminData() {
     });
 }
 
+/**
+ * Show job details
+ * @param {number} jobId - Job ID to show details for
+ */
+function showJobDetails(jobId) {
+    // Mock job data (in a real app, this would come from a database)
+    const jobs = {
+        1: {
+            id: '#JOB-2024-001',
+            title: 'CCTV Camera Installation',
+            location: 'Colombo 07, Galle Road',
+            partner: 'Kamal Silva',
+            status: 'Assigned',
+            statusClass: 'status-assigned',
+            payment: 'LKR 15,000',
+            deadline: 'Dec 25, 2024',
+            service: 'CCTV Installation',
+            description: 'Installation of 4 CCTV cameras with DVR system. Includes wiring, configuration, and testing. Customer requires night vision capability and remote viewing access.',
+            created: 'Dec 20, 2024',
+            priority: 'High'
+        },
+        2: {
+            id: '#JOB-2024-002',
+            title: 'Wi-Fi Mesh Installation',
+            location: 'Kandy, Peradeniya Road',
+            partner: 'Nimal Perera',
+            status: 'In Progress',
+            statusClass: 'status-progress',
+            payment: 'LKR 12,500',
+            deadline: 'Dec 24, 2024',
+            service: 'Wi-Fi Mesh System',
+            description: 'Setup of mesh Wi-Fi network covering 3-story building. Includes router configuration and signal optimization.',
+            created: 'Dec 18, 2024',
+            priority: 'Medium'
+        },
+        3: {
+            id: '#JOB-2024-003',
+            title: 'PABX Installation',
+            location: 'Gampaha, Negombo',
+            partner: 'Sunil Fernando',
+            status: 'Pending Approval',
+            statusClass: 'status-pending',
+            payment: 'LKR 20,000',
+            deadline: 'Dec 28, 2024',
+            service: 'PABX System',
+            description: 'Installation of 16-line PABX system for office. Includes programming, testing, and user training.',
+            created: 'Dec 22, 2024',
+            priority: 'High'
+        }
+    };
+
+    const job = jobs[jobId];
+
+    if (!job) {
+        showNotification('Job not found', 'error');
+        return;
+    }
+
+    // Populate modal with job data
+    document.getElementById('jobDetailsId').textContent = job.id;
+    document.getElementById('jobDetailsTitle').textContent = job.title;
+    document.getElementById('jobDetailsLocation').textContent = job.location;
+    document.getElementById('jobDetailsPartner').textContent = job.partner;
+    document.getElementById('jobDetailsPayment').textContent = job.payment;
+    document.getElementById('jobDetailsDeadline').textContent = job.deadline;
+    document.getElementById('jobDetailsService').textContent = job.service;
+    document.getElementById('jobDetailsDescription').textContent = job.description;
+    document.getElementById('jobDetailsCreated').textContent = job.created;
+    document.getElementById('jobDetailsPriority').textContent = job.priority;
+
+    // Update status badge
+    const statusBadge = document.getElementById('jobDetailsStatus');
+    statusBadge.textContent = job.status;
+    statusBadge.className = `status-badge ${job.statusClass}`;
+
+    // Show modal
+    document.getElementById('jobDetailsModal').classList.add('active');
+}
+
+/**
+ * Close job details modal
+ */
+function closeJobDetailsModal() {
+    document.getElementById('jobDetailsModal').classList.remove('active');
+}
+
 // Export functions
 window.adminLogin = adminLogin;
 window.showSection = showSection;
@@ -1986,3 +2072,5 @@ window.handlePhotoSelect = handlePhotoSelect;
 window.removeProfilePhoto = removeProfilePhoto;
 window.checkPasswordStrength = checkPasswordStrength;
 window.handleMyProfileUpdate = handleMyProfileUpdate;
+window.showJobDetails = showJobDetails;
+window.closeJobDetailsModal = closeJobDetailsModal;

@@ -177,13 +177,22 @@
             <!-- Job Cards -->
             <div class="jobs-container">
                 <!-- Job Card 1 - Assigned -->
-                <div class="job-card" data-status="assigned" onclick="showJobDetails(1)">
+                <div class="job-card" data-status="assigned">
                     <div class="job-header">
                         <div class="job-id">
                             <span class="job-label">Job ID</span>
                             <span class="job-number">#JOB-2024-001</span>
                         </div>
-                        <span class="job-status status-assigned">Assigned</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="job-status status-assigned">Assigned</span>
+                            <button class="btn-view-details" onclick="showJobDetails(1)" title="View Details">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <h3 class="job-title">CCTV Camera Installation</h3>
@@ -230,13 +239,22 @@
                 </div>
 
                 <!-- Job Card 2 - In Progress -->
-                <div class="job-card" data-status="progress" onclick="showJobDetails(2)">
+                <div class="job-card" data-status="progress">
                     <div class="job-header">
                         <div class="job-id">
                             <span class="job-label">Job ID</span>
                             <span class="job-number">#JOB-2024-002</span>
                         </div>
-                        <span class="job-status status-progress">In Progress</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="job-status status-progress">In Progress</span>
+                            <button class="btn-view-details" onclick="showJobDetails(2)" title="View Details">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <h3 class="job-title">Wi-Fi Mesh Installation</h3>
@@ -280,13 +298,22 @@
                 </div>
 
                 <!-- Job Card 3 - Pending Approval -->
-                <div class="job-card" data-status="pending" onclick="showJobDetails(3)">
+                <div class="job-card" data-status="pending">
                     <div class="job-header">
                         <div class="job-id">
                             <span class="job-label">Job ID</span>
                             <span class="job-number">#JOB-2024-003</span>
                         </div>
-                        <span class="job-status status-pending">Pending Approval</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="job-status status-pending">Pending Approval</span>
+                            <button class="btn-view-details" onclick="showJobDetails(3)" title="View Details">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <h3 class="job-title">PABX Installation</h3>

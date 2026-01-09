@@ -385,6 +385,63 @@ function handlePasswordChange(event) {
     return false;
 }
 
+// === UTILITY FUNCTIONS ===
+
+/**
+ * Show notification toast
+ */
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+
+    // Add to body
+    document.body.appendChild(notification);
+
+    // Trigger animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+/**
+ * Update statistics cards
+ */
+function updateStats() {
+    const jobCards = document.querySelectorAll('.job-card');
+    let activeCount = 0;
+    let pendingCount = 0;
+    let completedCount = 0;
+
+    jobCards.forEach(card => {
+        const status = card.getAttribute('data-status');
+        if (status === 'assigned' || status === 'progress') {
+            activeCount++;
+        } else if (status === 'pending') {
+            pendingCount++;
+        }
+    });
+
+    // Update stat cards
+    const statCards = document.querySelectorAll('.stat-card');
+    if (statCards[0]) {
+        statCards[0].querySelector('.stat-value').textContent = activeCount;
+    }
+    if (statCards[1]) {
+        statCards[1].querySelector('.stat-value').textContent = pendingCount;
+    }
+    // Completed count stays the same (would come from backend in real app)
+}
+
 // Export functions for use in HTML
 window.login = login;
 window.backToRoleSelection = backToRoleSelection;
@@ -405,3 +462,5 @@ window.switchToEditMode = switchToEditMode;
 window.switchToViewMode = switchToViewMode;
 window.checkPasswordStrength = checkPasswordStrength;
 window.handlePasswordChange = handlePasswordChange;
+window.showNotification = showNotification;
+window.updateStats = updateStats;
