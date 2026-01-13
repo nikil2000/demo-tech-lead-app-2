@@ -277,23 +277,49 @@ function adminLogin(event) {
 // === PARTNER DASHBOARD ===
 function loadPartnerJobs() {
     const container = document.getElementById('partnerJobsContainer');
-    container.innerHTML = '';
+    if (!container) return;
 
-    // Get current partner's region from session
+    console.log('Loading partner jobs from storage...');
+
+    // Get current logged-in partner
     const currentPartnerJson = sessionStorage.getItem('currentPartner');
     const currentPartner = currentPartnerJson ? JSON.parse(currentPartnerJson) : null;
-    const partnerRegion = currentPartner ? currentPartner.region : null;
 
-    // Load jobs from localStorage instead of AppState
+    if (!currentPartner) {
+        console.error('No partner logged in');
+        container.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--gray);">
+                <p style="font-size: 1.1rem; margin-bottom: 8px;">Please log in to view jobs</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Load jobs from localStorage
     const allJobs = loadJobsFromStorage();
 
-    // Filter jobs by partner's region
-    const filteredJobs = partnerRegion
-        ? allJobs.filter(job => job.region === partnerRegion)
-        : allJobs;
+    console.log(`Found ${allJobs.length} total jobs in storage`);
+
+    // Filter jobs for current partner by matching partner name
+    const filteredJobs = allJobs.filter(job => job.partner === currentPartner.name);
+
+    console.log(`Found ${filteredJobs.length} jobs assigned to partner: ${currentPartner.name}`);
+
+    // Clear container
+    container.innerHTML = '';
 
     if (filteredJobs.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No jobs available in your region</p>';
+        container.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--gray);">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 20px; opacity: 0.3;">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="9" x2="15" y2="9"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                <p style="font-size: 1.1rem; margin-bottom: 8px;">No jobs assigned yet</p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">New jobs will appear here when assigned by admin</p>
+            </div>
+        `;
         return;
     }
 
@@ -306,6 +332,9 @@ function loadPartnerJobs() {
             jobCard.style.opacity = '1';
         }, 100 * index);
     });
+
+    // Update stats after loading
+    updatePartnerStats();
 }
 
 function createPartnerJobCard(job) {
@@ -401,7 +430,7 @@ function createPartnerJobCard(job) {
             </div>
             <span class="job-status ${statusClass}">${statusText}</span>
         </div>
-        <h3 class="job-title">${job.title}</h3>
+        <h3 class="job-title">${job.serviceType || job.title}</h3>
         <div class="job-location">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -419,6 +448,12 @@ function createPartnerJobCard(job) {
                 <span class="detail-value">${job.deadline}</span>
             </div>
         </div>
+        ${job.description ? `
+            <div class="job-description" style="margin: 12px 0; padding: 12px; background: rgba(59, 130, 246, 0.05); border-radius: 8px; border-left: 3px solid #3B82F6;">
+                <p style="font-size: 0.85rem; font-weight: 600; color: #1F2937; margin-bottom: 6px;">Job Description:</p>
+                <p style="font-size: 0.9rem; color: #4B5563; line-height: 1.5;">${job.description}</p>
+            </div>
+        ` : ''}
         ${actionsHTML}
     `;
 
@@ -426,11 +461,17 @@ function createPartnerJobCard(job) {
 }
 
 function updatePartnerStats() {
-    const pending = AppState.jobs.filter(j => j.status === 'pending' || j.status === 'pending_approval').length;
-    const completed = AppState.jobs.filter(j => j.status === 'completed').length;
+    // Load jobs from storage to ensure accuracy
+    const allJobs = loadJobsFromStorage();
 
-    document.getElementById('partnerPendingCount').textContent = pending;
-    document.getElementById('partnerCompletedCount').textContent = completed;
+    const pending = allJobs.filter(j => j.status === 'pending' || j.status === 'pending_approval').length;
+    const completed = allJobs.filter(j => j.status === 'completed').length;
+
+    const pendingEl = document.getElementById('partnerPendingCount');
+    const completedEl = document.getElementById('partnerCompletedCount');
+
+    if (pendingEl) pendingEl.textContent = pending;
+    if (completedEl) completedEl.textContent = completed;
 }
 
 // === ADMIN DASHBOARD ===
@@ -509,43 +550,64 @@ function createApprovalCard(job) {
 }
 
 function updateAdminStats() {
-    const total = AppState.jobs.length;
-    const pending = AppState.jobs.filter(j => j.status === 'pending').length;
-    const completed = AppState.jobs.filter(j => j.status === 'completed').length;
+    // Load jobs from storage to ensure accuracy
+    const allJobs = loadJobsFromStorage();
 
-    document.getElementById('adminTotalJobs').textContent = total;
-    document.getElementById('adminPendingCount').textContent = pending;
-    document.getElementById('adminCompletedCount').textContent = completed;
-    document.getElementById('adminPendingBadge').textContent = pending;
+    const total = allJobs.length;
+    const pending = allJobs.filter(j => j.status === 'pending' || j.status === 'pending_approval').length;
+    const completed = allJobs.filter(j => j.status === 'completed').length;
+
+    const totalEl = document.getElementById('adminTotalJobs');
+    const pendingEl = document.getElementById('adminPendingCount');
+    const completedEl = document.getElementById('adminCompletedCount');
+    const badgeEl = document.getElementById('adminPendingBadge');
+
+    if (totalEl) totalEl.textContent = total;
+    if (pendingEl) pendingEl.textContent = pending;
+    if (completedEl) completedEl.textContent = completed;
+    if (badgeEl) badgeEl.textContent = pending;
 }
 
 // === JOB ACTIONS ===
-// === JOB ACTIONS ===
-// === JOB ACTIONS ===
 function acceptJob(jobId) {
-    // Parse ID to ensure it matches storage type (number)
-    const id = parseInt(jobId);
-    const job = AppState.jobs.find(j => j.id === id);
+    console.log('Accept job called with ID:', jobId);
+
+    // Load jobs from storage to ensure we have latest data
+    const allJobs = loadJobsFromStorage();
+
+    // Find job by ID (handle both string and number IDs)
+    const job = allJobs.find(j => j.id == jobId || j.id === jobId);
+
     if (job) {
+        console.log('Job found:', job);
         job.status = 'progress';
         job.progress = 10;
 
-        // Save to Storage
-        saveJobsToStorage(AppState.jobs);
+        // Update AppState
+        AppState.jobs = allJobs;
 
+        // Save to Storage
+        saveJobsToStorage(allJobs);
+
+        // Reload jobs and update stats
         loadPartnerJobs();
         updatePartnerStats();
-        showNotification(`Job #JOB-2024-00${id} accepted successfully!`, 'success');
+
+        showNotification(`Job ${job.id} accepted successfully!`, 'success');
+    } else {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
     }
 }
 
 function completeJob(jobId) {
-    // Store the job ID for later use (ensure it's a number)
-    const id = parseInt(jobId);
-    AppState.currentJobId = id;
+    console.log('Complete job called with ID:', jobId);
+
+    // Store the job ID for later use (keep original format)
+    AppState.currentJobId = jobId;
 
     // Open image upload modal
-    openImageUploadModal(id);
+    openImageUploadModal(jobId);
 }
 
 // === IMAGE UPLOAD FOR JOB COMPLETION ===
@@ -634,40 +696,67 @@ function removeImage(index) {
 
 function submitJobCompletion() {
     const jobId = AppState.currentJobId;
-    const job = AppState.jobs.find(j => j.id === jobId);
+    console.log('Submitting job completion for ID:', jobId);
+
+    // Load jobs from storage
+    const allJobs = loadJobsFromStorage();
+
+    // Find job by ID (handle both string and number IDs)
+    const job = allJobs.find(j => j.id == jobId || j.id === jobId);
 
     if (job && uploadedFiles.length > 0) {
+        console.log('Job found, submitting with', uploadedFiles.length, 'photos');
+
         job.status = 'pending_approval';
         job.photos = uploadedFiles.length;
         job.documents = 1; // Simulated document count
         job.submittedTime = 'Just now';
         job.uploadedImages = uploadedFiles.map(f => f.dataUrl); // Store image data
 
+        // Update AppState
+        AppState.jobs = allJobs;
+
         // Save to Storage
-        saveJobsToStorage(AppState.jobs);
+        saveJobsToStorage(allJobs);
 
         loadPartnerJobs();
         updatePartnerStats();
         closeImageUpload();
 
-        showNotification(`Job #JOB-2024-00${jobId} submitted for approval with ${uploadedFiles.length} photo(s)!`, 'success');
+        showNotification(`Job ${jobId} submitted for approval with ${uploadedFiles.length} photo(s)!`, 'success');
+    } else if (!job) {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
+    } else {
+        console.error('No images uploaded');
+        showNotification('Please upload at least one image', 'error');
     }
 }
 
 function approveJob(jobId) {
-    const id = parseInt(jobId);
-    const job = AppState.jobs.find(j => j.id === id);
+    console.log('Approve job called with ID:', jobId);
+
+    // Load jobs from storage
+    const allJobs = loadJobsFromStorage();
+
+    // Find job by ID (handle both string and number IDs)
+    const job = allJobs.find(j => j.id == jobId || j.id === jobId);
+
     if (job) {
+        console.log('Job found, approving:', job);
         job.status = 'completed';
 
         // Remove rejection reason if it existed
         delete job.rejectionReason;
 
+        // Update AppState
+        AppState.jobs = allJobs;
+
         // Save to Storage
-        saveJobsToStorage(AppState.jobs);
+        saveJobsToStorage(allJobs);
 
         // Remove from admin approvals in UI immediately for responsiveness
-        const card = document.getElementById(`approval-card-${id}`);
+        const card = document.getElementById(`approval-card-${jobId}`);
         if (card) {
             card.style.transform = 'scale(0.95)';
             card.style.opacity = '0';
@@ -681,7 +770,10 @@ function approveJob(jobId) {
         updateAdminStats();
         updatePartnerStats();
 
-        showNotification(`Job #JOB-2024-00${id} approved successfully!`, 'success');
+        showNotification(`Job ${jobId} approved successfully!`, 'success');
+    } else {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
     }
 }
 
@@ -690,19 +782,29 @@ function raiseIssue(jobId) {
 }
 
 function rejectJob(jobId) {
-    const id = parseInt(jobId);
+    console.log('Reject job called with ID:', jobId);
+
     const reason = prompt("Please enter the reason for rejection:", "Photos are not clear");
     if (reason) {
-        const job = AppState.jobs.find(j => j.id === id);
+        // Load jobs from storage
+        const allJobs = loadJobsFromStorage();
+
+        // Find job by ID (handle both string and number IDs)
+        const job = allJobs.find(j => j.id == jobId || j.id === jobId);
+
         if (job) {
+            console.log('Job found, rejecting with reason:', reason);
             job.status = 'progress'; // Revert to In Progress
             job.rejectionReason = reason;
 
+            // Update AppState
+            AppState.jobs = allJobs;
+
             // Save to Storage
-            saveJobsToStorage(AppState.jobs);
+            saveJobsToStorage(allJobs);
 
             // Remove from admin approvals UI
-            const card = document.getElementById(`approval-card-${id}`);
+            const card = document.getElementById(`approval-card-${jobId}`);
             if (card) {
                 card.style.opacity = '0';
                 setTimeout(() => {
@@ -714,7 +816,10 @@ function rejectJob(jobId) {
             updateAdminStats();
             updatePartnerStats();
 
-            showNotification(`Job #JOB-2024-00${id} rejected. Partner has been notified.`, 'info');
+            showNotification(`Job ${jobId} rejected. Partner has been notified.`, 'info');
+        } else {
+            console.error('Job not found with ID:', jobId);
+            showNotification('Job not found', 'error');
         }
     }
 }
@@ -773,10 +878,42 @@ function showAdminSection(sectionName, event) {
 }
 
 // === JOB CREATION ===
+/**
+ * Load tech lead partners into the assignment dropdown
+ */
+function loadTechLeadPartners() {
+    const dropdown = document.getElementById('partnerAssignmentDropdown');
+    if (!dropdown) return;
+
+    // Get all users from localStorage
+    const usersJson = localStorage.getItem('platformUsers');
+    const allUsers = usersJson ? JSON.parse(usersJson) : [];
+
+    // Filter for tech lead partners only
+    const techLeadPartners = allUsers.filter(u => u.role === 'tech_lead_partner');
+
+    // Clear existing options except the first one
+    dropdown.innerHTML = '<option value="">Select Tech Lead Partner</option>';
+
+    // Add tech lead partners to dropdown
+    if (techLeadPartners.length === 0) {
+        dropdown.innerHTML += '<option value="" disabled>No tech lead partners available</option>';
+    } else {
+        techLeadPartners.forEach(partner => {
+            const option = document.createElement('option');
+            option.value = partner.name;
+            option.textContent = `${partner.name} (${partner.nvq || partner.id})`;
+            dropdown.appendChild(option);
+        });
+    }
+}
+
 function toggleJobForm() {
     const formContainer = document.getElementById('jobFormContainer');
     if (formContainer.style.display === 'none') {
         formContainer.style.display = 'block';
+        // Load tech lead partners when opening the form
+        loadTechLeadPartners();
     } else {
         formContainer.style.display = 'none';
         // Reset form
@@ -817,14 +954,22 @@ function createJob(event) {
         partner: formData.get('partner'),
         description: formData.get('description') || '',
         photos: 0,
-        documents: 0
+        documents: 0,
+        createdAt: new Date().toISOString()
     };
+
+    console.log('Creating new job:', newJob);
 
     // Add to AppState
     AppState.jobs.push(newJob);
 
     // Save to Storage (CRITICAL: Persist the job)
     saveJobsToStorage(AppState.jobs);
+    console.log('Job saved to storage. Total jobs:', AppState.jobs.length);
+
+    // Reload jobs from storage to ensure sync
+    AppState.jobs = loadJobsFromStorage();
+    console.log('Jobs reloaded from storage:', AppState.jobs.length);
 
     // Update all views
     loadJobsTable();
@@ -842,7 +987,16 @@ function createJob(event) {
 // === JOBS TABLE ===
 function loadJobsTable(filter = 'all') {
     const tbody = document.getElementById('jobsTableBody');
+    if (!tbody) {
+        console.warn('Jobs table body not found');
+        return;
+    }
+
     tbody.innerHTML = '';
+
+    // Always reload from storage to ensure we have the latest data
+    AppState.jobs = loadJobsFromStorage();
+    console.log('Loading jobs table. Total jobs:', AppState.jobs.length);
 
     let jobsToShow = AppState.jobs;
 

@@ -25,25 +25,45 @@ function login(event) {
     const username = event.target.querySelector('input[type="text"]').value;
     const password = event.target.querySelector('input[type="password"]').value;
 
-    // Simple validation (prototype only)
-    if (username && password) {
-        // Simulate login delay
-        const button = event.target.querySelector('.btn-primary');
-        button.innerHTML = '<span>Signing In...</span>';
-        button.style.opacity = '0.7';
+    // Validate credentials against platformUsers
+    const users = JSON.parse(localStorage.getItem('platformUsers') || '[]');
+    const user = users.find(u =>
+        (u.username === username || u.nvq === username || u.mobile === username) &&
+        u.password === password &&
+        u.role === 'tech_lead_partner'
+    );
 
-        setTimeout(() => {
-            // Show dashboard
-            showScreen('dashboardScreen');
-
-            // Reset button
-            button.innerHTML = '<span>Sign In</span><div class="btn-shine"></div>';
-            button.style.opacity = '1';
-
-            // Show welcome notification
-            showNotification('Welcome back! You have 3 new job assignments.', 'success');
-        }, 1500);
+    if (!user) {
+        showNotification('Invalid credentials', 'error');
+        return false;
     }
+
+    // Save current partner to session
+    setCurrentPartner(user);
+
+    // Simulate login delay
+    const button = event.target.querySelector('.btn-primary');
+    button.innerHTML = '<span>Signing In...</span>';
+    button.style.opacity = '0.7';
+
+    setTimeout(() => {
+        // Show dashboard
+        showScreen('dashboardScreen');
+
+        // Reset button
+        button.innerHTML = '<span>Sign In</span><div class="btn-shine"></div>';
+        button.style.opacity = '1';
+
+        // Load jobs from localStorage after dashboard is shown
+        // This ensures jobs persist after logout/login
+        setTimeout(() => {
+            loadPartnerJobs();
+            console.log('Partner App: Jobs loaded from storage after login');
+        }, 100);
+
+        // Show welcome notification with partner's name
+        showNotification(`Welcome back, ${user.name}!`, 'success');
+    }, 1500);
 
     return false;
 }
@@ -198,6 +218,9 @@ function closeLogoutModal() {
 
 function confirmLogout() {
     closeLogoutModal();
+
+    // Clear current partner session
+    clearCurrentPartner();
 
     // Simple console log instead of notification to avoid dependency issues
     console.log('Logging out...');
@@ -465,6 +488,42 @@ window.handlePasswordChange = handlePasswordChange;
 window.showNotification = showNotification;
 window.updateStats = updateStats;
 
+// === SESSION MANAGEMENT ===
+/**
+ * Save current logged-in partner to session storage
+ */
+function setCurrentPartner(user) {
+    try {
+        sessionStorage.setItem('currentPartner', JSON.stringify(user));
+    } catch (error) {
+        console.error('Error saving current partner:', error);
+    }
+}
+
+/**
+ * Get current logged-in partner from session storage
+ */
+function getCurrentPartner() {
+    try {
+        const userJson = sessionStorage.getItem('currentPartner');
+        return userJson ? JSON.parse(userJson) : null;
+    } catch (error) {
+        console.error('Error loading current partner:', error);
+        return null;
+    }
+}
+
+/**
+ * Clear current partner from session storage
+ */
+function clearCurrentPartner() {
+    try {
+        sessionStorage.removeItem('currentPartner');
+    } catch (error) {
+        console.error('Error clearing current partner:', error);
+    }
+}
+
 // === SHARED STORAGE HELPERS ===
 function saveJobsToStorage(jobs) {
     try {
@@ -667,9 +726,184 @@ function updateCardToPending(jobId) {
     updateStats();
 }
 
+// === DYNAMIC JOB LOADING ===
+/**
+ * Load and display jobs for current partner from localStorage
+ */
+function loadPartnerJobs() {
+    const jobsContainer = document.querySelector('.jobs-container');
+    if (!jobsContainer) return;
+
+    console.log('Loading partner jobs from storage...');
+
+    // Get current logged-in partner
+    const currentPartner = getCurrentPartner();
+    if (!currentPartner) {
+        console.error('No partner logged in');
+        jobsContainer.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--gray);">
+                <p style="font-size: 1.1rem; margin-bottom: 8px;">Please log in to view jobs</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Get jobs from localStorage
+    const allJobs = loadJobsFromStorage();
+
+    console.log(`Found ${allJobs.length} total jobs in storage`);
+
+    // Filter jobs for current partner by matching partner name
+    const partnerJobs = allJobs.filter(job => job.partner === currentPartner.name);
+
+    console.log(`Found ${partnerJobs.length} jobs assigned to partner: ${currentPartner.name}`);
+
+    // Clear existing jobs
+    jobsContainer.innerHTML = '';
+
+    // If no jobs, show message
+    if (partnerJobs.length === 0) {
+        jobsContainer.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--gray);">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 20px; opacity: 0.3;">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="9" x2="15" y2="9"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                <p style="font-size: 1.1rem; margin-bottom: 8px;">No jobs assigned yet</p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">New jobs will appear here when assigned by admin</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Render each job
+    partnerJobs.forEach(job => {
+        renderJobCard(job);
+    });
+
+    // Update stats after loading
+    updateStats();
+}
+
+/**
+ * Render a single job card
+ */
+function renderJobCard(job) {
+    const jobsContainer = document.querySelector('.jobs-container');
+    if (!jobsContainer) return;
+
+    const jobCard = document.createElement('div');
+    jobCard.className = 'job-card';
+    jobCard.setAttribute('data-status', job.status || 'assigned');
+
+    // Determine status display
+    let statusClass = 'status-assigned';
+    let statusText = 'Assigned';
+    if (job.status === 'in_progress' || job.status === 'progress') {
+        statusClass = 'status-progress';
+        statusText = 'In Progress';
+    } else if (job.status === 'pending_approval' || job.status === 'pending') {
+        statusClass = 'status-pending';
+        statusText = 'Pending Approval';
+    } else if (job.status === 'completed') {
+        statusClass = 'status-completed';
+        statusText = 'Completed';
+    }
+
+    jobCard.innerHTML = `
+        <div class="job-header">
+            <div class="job-id">
+                <span class="job-label">Job ID</span>
+                <span class="job-number">${job.id}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="job-status ${statusClass}">${statusText}</span>
+                <button class="btn-view-details" onclick="showJobDetails('${job.id}')" title="View Details">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <h3 class="job-title">${job.serviceType || job.title || 'Service Type Not Specified'}</h3>
+        <p class="job-location">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            ${job.location || 'Location not specified'}
+        </p>
+
+        ${job.description ? `<p class="job-description" style="color: var(--gray); font-size: 0.9rem; margin: 12px 0; line-height: 1.5;">${job.description}</p>` : ''}
+
+        <div class="job-details-grid">
+            <div class="job-detail">
+                <span class="detail-label">Payment</span>
+                <span class="detail-value">${job.payment || 'TBD'}</span>
+            </div>
+            <div class="job-detail">
+                <span class="detail-label">Deadline</span>
+                <span class="detail-value">${job.deadline || 'TBD'}</span>
+            </div>
+        </div>
+
+        <div class="job-actions">
+            ${job.status === 'assigned' ? `
+                <button class="btn-accept" onclick="acceptJob(event, '${job.id}')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Accept Job
+                </button>
+                <button class="btn-issue" onclick="raiseIssue(event, '${job.id}')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    Issue
+                </button>
+            ` : job.status === 'progress' || job.status === 'in_progress' ? `
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 50%"></div>
+                </div>
+                <p class="progress-text">50% Complete</p>
+                <button class="btn-complete" onclick="completeJob(event, '${job.id}')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    Mark Complete
+                </button>
+            ` : job.status === 'pending' || job.status === 'pending_approval' ? `
+                <div class="pending-indicator">
+                    <div class="pulse-dot"></div>
+                    <span>Waiting for admin review...</span>
+                </div>
+            ` : ''}
+        </div>
+
+        <div class="card-shimmer"></div>
+    `;
+
+    jobsContainer.appendChild(jobCard);
+}
+
 // === INIT & POLLING ===
 document.addEventListener('DOMContentLoaded', () => {
     initJobStates();
+
+    // Load jobs from localStorage when dashboard is active
+    const dashboardScreen = document.getElementById('dashboardScreen');
+    if (dashboardScreen && dashboardScreen.classList.contains('active')) {
+        setTimeout(() => {
+            loadPartnerJobs();
+        }, 100);
+    }
+
     // Check for approved/rejected jobs
     setInterval(checkForUpdates, 5000);
 });

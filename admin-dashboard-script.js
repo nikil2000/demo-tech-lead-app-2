@@ -28,6 +28,71 @@ function loadJobsFromStorage() {
     }
 }
 
+// === SECTION NAVIGATION ===
+/**
+ * Show a specific section and hide others
+ */
+function showSection(sectionId) {
+    // Hide all sections
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.style.display = 'none';
+    });
+
+    // Show the target section
+    const targetSection = document.getElementById(`${sectionId}Section`);
+    if (targetSection) {
+        targetSection.style.display = 'block';
+    }
+
+    // Update navigation active state
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    event.target.closest('.nav-link')?.classList.add('active');
+
+    // Show/hide Create New Job button based on section
+    const createJobBtn = document.getElementById('createJobBtn');
+    if (createJobBtn) {
+        createJobBtn.style.display = (sectionId === 'jobs') ? 'block' : 'none';
+    }
+
+    // Load jobs when Jobs section is shown
+    if (sectionId === 'jobs') {
+        displayJobs();
+    }
+}
+
+/**
+ * Display jobs from localStorage in the jobs table
+ */
+function displayJobs() {
+    const tbody = document.querySelector('#jobsSection table tbody');
+    if (!tbody) return;
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    // Load jobs from storage
+    const jobs = loadJobsFromStorage();
+
+    // If no jobs, show a message
+    if (jobs.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--gray);">
+                    No jobs created yet. Click "Create New Job" to get started.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Add each job to the table
+    jobs.forEach(job => {
+        addJobToTable(job);
+    });
+}
+
 // === SCREEN NAVIGATION ===
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
@@ -380,6 +445,8 @@ function openImageModal(src) {
 }
 
 function approveJob(jobId) {
+    console.log('Approve job called with ID:', jobId);
+
     // Check permission
     if (!canAccess(PERMISSIONS.APPROVE_JOBS)) {
         logAccessDenied('Job Approval');
@@ -389,9 +456,12 @@ function approveJob(jobId) {
 
     // Update Storage
     let jobs = loadJobsFromStorage();
-    let job = jobs.find(j => j.id === jobId);
+
+    // Find job by ID (handle both string and number IDs)
+    let job = jobs.find(j => j.id == jobId || j.id === jobId);
 
     if (job) {
+        console.log('Job found, approving:', job);
         job.status = 'completed';
         job.approvedBy = getCurrentUser().name;
         job.approvedAt = new Date().toISOString();
@@ -407,10 +477,15 @@ function approveJob(jobId) {
 
         // Update Stats (Optional: reload stats)
         updateAdminStats();
+    } else {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
     }
 }
 
 function rejectJob(jobId) {
+    console.log('Reject job called with ID:', jobId);
+
     // Check permission
     if (!canAccess(PERMISSIONS.APPROVE_JOBS)) {
         logAccessDenied('Job Rejection');
@@ -423,9 +498,12 @@ function rejectJob(jobId) {
 
     // Update Storage
     let jobs = loadJobsFromStorage();
-    let job = jobs.find(j => j.id === jobId);
+
+    // Find job by ID (handle both string and number IDs)
+    let job = jobs.find(j => j.id == jobId || j.id === jobId);
 
     if (job) {
+        console.log('Job found, rejecting with reason:', reason);
         job.status = 'in_progress'; // Send back to in_progress
         job.rejectionReason = reason;
         job.rejectedBy = getCurrentUser().name;
@@ -442,10 +520,43 @@ function rejectJob(jobId) {
 
         // Update Stats
         updateAdminStats();
+    } else {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
     }
 }
 
 // === CREATE JOB MODAL ===
+/**
+ * Load tech lead partners into the assignment dropdown
+ */
+function loadTechLeadPartnersForModal() {
+    const dropdown = document.getElementById('partnerAssignmentDropdown');
+    if (!dropdown) return;
+
+    // Get all users from localStorage
+    const usersJson = localStorage.getItem('platformUsers');
+    const allUsers = usersJson ? JSON.parse(usersJson) : [];
+
+    // Filter for tech lead partners only
+    const techLeadPartners = allUsers.filter(u => u.role === 'tech_lead_partner');
+
+    // Clear existing options except the first one
+    dropdown.innerHTML = '<option value="">Select Tech Lead Partner</option>';
+
+    // Add tech lead partners to dropdown
+    if (techLeadPartners.length === 0) {
+        dropdown.innerHTML += '<option value="" disabled>No tech lead partners available</option>';
+    } else {
+        techLeadPartners.forEach(partner => {
+            const option = document.createElement('option');
+            option.value = partner.name;
+            option.textContent = `${partner.name} (${partner.nvq || partner.id})`;
+            dropdown.appendChild(option);
+        });
+    }
+}
+
 function showCreateJobModal() {
     // Check permission
     if (!canAccess(PERMISSIONS.CREATE_JOBS)) {
@@ -465,6 +576,9 @@ function showCreateJobModal() {
         // Set minimum date to today
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('jobDeadline').min = today;
+
+        // Load tech lead partners into dropdown
+        loadTechLeadPartnersForModal();
     }
 }
 
@@ -492,6 +606,7 @@ function handleCreateJob(event) {
     const payment = document.getElementById('jobPayment').value;
     const deadline = document.getElementById('jobDeadline').value;
     const description = document.getElementById('jobDescription').value;
+    const partner = document.getElementById('partnerAssignmentDropdown').value;
 
     // Generate job ID (in real app, would come from backend)
     const jobId = `JOB-2024-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
@@ -515,7 +630,7 @@ function handleCreateJob(event) {
         region: region,
         payment: formattedPayment,
         deadline: formattedDeadline,
-        partner: 'Unassigned',
+        partner: partner,
         description: description,
         status: 'assigned',
         createdAt: new Date().toISOString(),
@@ -547,7 +662,7 @@ function handleCreateJob(event) {
     closeCreateJobModal();
 
     // Show success notification
-    showNotification(`Job ${jobId} created successfully and assigned to ${region}!`, 'success');
+    showNotification(`Job ${jobId} created successfully and assigned to ${partner}!`, 'success');
 
     // In real app, would save to backend and refresh job list
     console.log('New job created and saved to storage:', newJob);
@@ -2172,4 +2287,22 @@ window.checkPasswordStrength = checkPasswordStrength;
 window.handleMyProfileUpdate = handleMyProfileUpdate;
 window.showJobDetails = showJobDetails;
 window.closeJobDetailsModal = closeJobDetailsModal;
+
+// === INITIALIZATION ===
+/**
+ * Initialize the dashboard when DOM is loaded
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Admin Dashboard: Initializing...');
+
+    // Load jobs from localStorage on initial page load
+    // This ensures jobs are displayed when admin logs in
+    const jobsSection = document.getElementById('jobsSection');
+    if (jobsSection) {
+        // Call displayJobs to populate the jobs table from localStorage
+        // This will be called again when navigating to jobs section via showSection()
+        displayJobs();
+        console.log('Admin Dashboard: Jobs loaded from storage');
+    }
+});
 
