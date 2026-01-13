@@ -4,48 +4,11 @@
 // ===================================
 
 // === SHARED STATE ===
+// === SHARED STATE ===
 const AppState = {
-    jobs: [
-        {
-            id: 1,
-            title: 'CCTV Camera Installation',
-            location: 'Colombo 07, Galle Road',
-            region: 'Western Province',
-            payment: 'LKR 15,000',
-            deadline: 'Dec 25, 2024',
-            status: 'assigned',
-            partner: 'Current User',
-            photos: 0,
-            documents: 0
-        },
-        {
-            id: 2,
-            title: 'Wi-Fi Mesh Installation',
-            location: 'Kandy, Peradeniya Road',
-            region: 'Central Province',
-            payment: 'LKR 12,500',
-            deadline: 'Dec 26, 2024',
-            status: 'progress',
-            partner: 'Current User',
-            progress: 65,
-            photos: 0,
-            documents: 0
-        },
-        {
-            id: 3,
-            title: 'PABX Installation',
-            location: 'Gampaha, Negombo',
-            region: 'Western Province',
-            payment: 'LKR 20,000',
-            deadline: 'Dec 24, 2024',
-            status: 'pending',
-            partner: 'Current User',
-            photos: 3,
-            documents: 2,
-            submittedTime: '2 hours ago'
-        }
-    ],
-    currentRole: null
+    jobs: [], // Will be loaded from storage
+    currentRole: null,
+    currentJobId: null
 };
 
 // === SHARED JOB STORAGE ===
@@ -79,14 +42,96 @@ function saveJobsToStorage(jobs) {
 function initializeJobsStorage() {
     const existingJobs = loadJobsFromStorage();
     if (existingJobs.length === 0) {
-        // Initialize with default demo jobs
-        saveJobsToStorage(AppState.jobs);
+        // Default Demo Jobs
+        const defaultJobs = [
+            {
+                id: 1,
+                title: 'CCTV Camera Installation',
+                location: 'Colombo 07, Galle Road',
+                region: 'Western Province',
+                payment: 'LKR 15,000',
+                deadline: 'Dec 25, 2024',
+                status: 'assigned',
+                partner: 'Current User',
+                photos: 0,
+                documents: 0
+            },
+            {
+                id: 2,
+                title: 'Wi-Fi Mesh Installation',
+                location: 'Kandy, Peradeniya Road',
+                region: 'Central Province',
+                payment: 'LKR 12,500',
+                deadline: 'Dec 26, 2024',
+                status: 'progress',
+                partner: 'Current User',
+                progress: 65,
+                photos: 0,
+                documents: 0
+            },
+            {
+                id: 3,
+                title: 'PABX Installation',
+                location: 'Gampaha, Negombo',
+                region: 'Western Province',
+                payment: 'LKR 20,000',
+                deadline: 'Dec 24, 2024',
+                status: 'pending',
+                partner: 'Current User',
+                photos: 3,
+                documents: 2,
+                submittedTime: '2 hours ago'
+            }
+        ];
+        saveJobsToStorage(defaultJobs);
+        AppState.jobs = defaultJobs;
         console.log('Initialized job storage with default jobs');
+    } else {
+        AppState.jobs = existingJobs;
+        console.log('Loaded jobs from storage');
     }
 }
 
 // Initialize jobs storage on page load
 initializeJobsStorage();
+
+// === REAL-TIME SYNC ===
+// Poll storage for updates (e.g. from other tabs or concurrent persistence updates)
+setInterval(() => {
+    // Only poll if we have a role selected (optimization)
+    if (AppState.currentRole) {
+        const storedJobs = loadJobsFromStorage();
+
+        // Basic check: just update AppState to stay in sync
+        const currentJson = JSON.stringify(AppState.jobs);
+        const newJson = JSON.stringify(storedJobs);
+
+        if (currentJson !== newJson) {
+            console.log('Syncing state from storage...');
+            AppState.jobs = storedJobs;
+
+            // Refresh current view
+            if (AppState.currentRole === 'partner') {
+                loadPartnerJobs();
+                updatePartnerStats();
+            } else if (AppState.currentRole === 'admin') {
+                // If on jobs list
+                const jobsSection = document.getElementById('adminJobsSection');
+                if (jobsSection && jobsSection.classList.contains('active')) {
+                    const activeFilter = document.querySelector('.filter-tab.active')?.textContent.toLowerCase() || 'all';
+                    loadJobsTable(activeFilter === 'all' ? 'all' : activeFilter);
+                }
+
+                // If on approvals
+                const approvalSection = document.getElementById('adminApprovalSection');
+                if (approvalSection && approvalSection.classList.contains('active')) {
+                    loadAdminApprovals();
+                }
+                updateAdminStats();
+            }
+        }
+    }
+}, 2000); // 2 second poll
 
 // === SCREEN NAVIGATION ===
 function showScreen(screenId) {
@@ -238,19 +283,20 @@ function createPartnerJobCard(job) {
     let statusClass = '';
     let statusText = '';
     let actionsHTML = '';
+    let rejectionHTML = '';
 
     if (job.status === 'assigned') {
         statusClass = 'status-assigned';
         statusText = 'Assigned';
         actionsHTML = `
             <div class="job-actions">
-                <button class="btn-accept" onclick="event.stopPropagation(); acceptJob(${job.id})">
+                <button class="btn-accept" onclick="event.stopPropagation(); acceptJob('${job.id}')">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                     Accept Job
                 </button>
-                <button class="btn-issue" onclick="event.stopPropagation(); raiseIssue(${job.id})">
+                <button class="btn-issue" onclick="event.stopPropagation(); raiseIssue('${job.id}')">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -259,16 +305,28 @@ function createPartnerJobCard(job) {
                 </button>
             </div>
         `;
-    } else if (job.status === 'progress') {
+    } else if (job.status === 'progress' || job.status === 'in_progress') {
         statusClass = 'status-progress';
         statusText = 'In Progress';
+        const progress = job.progress !== undefined ? job.progress : 10;
+
+        // Rejection Note
+        if (job.rejectionReason) {
+            rejectionHTML = `
+                <div class="rejection-note" style="background: rgba(239, 68, 68, 0.1); color: var(--status-rejected); padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem;">
+                    <strong>Admin Rejected:</strong> ${job.rejectionReason}
+                </div>
+            `;
+        }
+
         actionsHTML = `
             <div class="progress-bar">
-                <div class="progress-fill" style="width: ${job.progress}%"></div>
+                <div class="progress-fill" style="width: ${progress}%"></div>
             </div>
-            <p class="progress-text">${job.progress}% Complete</p>
+            <p class="progress-text">${progress}% Complete</p>
+            ${rejectionHTML}
             <div class="job-actions">
-                <button class="btn-complete" onclick="event.stopPropagation(); completeJob(${job.id})">
+                <button class="btn-complete" onclick="event.stopPropagation(); completeJob('${job.id}')">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
@@ -277,7 +335,7 @@ function createPartnerJobCard(job) {
                 </button>
             </div>
         `;
-    } else if (job.status === 'pending') {
+    } else if (job.status === 'pending' || job.status === 'pending_approval') {
         statusClass = 'status-pending';
         statusText = 'Pending Approval';
         actionsHTML = `
@@ -305,7 +363,7 @@ function createPartnerJobCard(job) {
         <div class="job-header">
             <div class="job-id">
                 <span class="job-label">Job ID</span>
-                <span class="job-number">#JOB-2024-00${job.id}</span>
+                <span class="job-number">#${job.id}</span>
             </div>
             <span class="job-status ${statusClass}">${statusText}</span>
         </div>
@@ -334,7 +392,7 @@ function createPartnerJobCard(job) {
 }
 
 function updatePartnerStats() {
-    const pending = AppState.jobs.filter(j => j.status === 'pending').length;
+    const pending = AppState.jobs.filter(j => j.status === 'pending' || j.status === 'pending_approval').length;
     const completed = AppState.jobs.filter(j => j.status === 'completed').length;
 
     document.getElementById('partnerPendingCount').textContent = pending;
@@ -344,7 +402,7 @@ function updatePartnerStats() {
 // === ADMIN DASHBOARD ===
 function loadAdminApprovals() {
     const container = document.getElementById('adminApprovalsContainer');
-    const pendingJobs = AppState.jobs.filter(j => j.status === 'pending');
+    const pendingJobs = AppState.jobs.filter(j => j.status === 'pending' || j.status === 'pending_approval');
 
     container.innerHTML = '';
 
@@ -428,11 +486,16 @@ function updateAdminStats() {
 }
 
 // === JOB ACTIONS ===
+// === JOB ACTIONS ===
 function acceptJob(jobId) {
     const job = AppState.jobs.find(j => j.id === jobId);
     if (job) {
         job.status = 'progress';
         job.progress = 10;
+
+        // Save to Storage
+        saveJobsToStorage(AppState.jobs);
+
         loadPartnerJobs();
         updatePartnerStats();
         showNotification(`Job #JOB-2024-00${jobId} accepted successfully!`, 'success');
@@ -532,11 +595,14 @@ function submitJobCompletion() {
     const job = AppState.jobs.find(j => j.id === jobId);
 
     if (job && uploadedFiles.length > 0) {
-        job.status = 'pending';
+        job.status = 'pending_approval';
         job.photos = uploadedFiles.length;
         job.documents = 1; // Simulated document count
         job.submittedTime = 'Just now';
         job.uploadedImages = uploadedFiles.map(f => f.dataUrl); // Store image data
+
+        // Save to Storage
+        saveJobsToStorage(AppState.jobs);
 
         loadPartnerJobs();
         updatePartnerStats();
@@ -551,7 +617,13 @@ function approveJob(jobId) {
     if (job) {
         job.status = 'completed';
 
-        // Remove from admin approvals
+        // Remove rejection reason if it existed
+        delete job.rejectionReason;
+
+        // Save to Storage
+        saveJobsToStorage(AppState.jobs);
+
+        // Remove from admin approvals in UI immediately for responsiveness
         const card = document.getElementById(`approval-card-${jobId}`);
         if (card) {
             card.style.transform = 'scale(0.95)';
@@ -575,7 +647,32 @@ function raiseIssue(jobId) {
 }
 
 function rejectJob(jobId) {
-    showNotification(`Rejection form opened for Job #JOB-2024-00${jobId}`, 'info');
+    const reason = prompt("Please enter the reason for rejection:", "Photos are not clear");
+    if (reason) {
+        const job = AppState.jobs.find(j => j.id === jobId);
+        if (job) {
+            job.status = 'progress'; // Revert to In Progress
+            job.rejectionReason = reason;
+
+            // Save to Storage
+            saveJobsToStorage(AppState.jobs);
+
+            // Remove from admin approvals UI
+            const card = document.getElementById(`approval-card-${jobId}`);
+            if (card) {
+                card.style.opacity = '0';
+                setTimeout(() => {
+                    card.remove();
+                    loadAdminApprovals();
+                }, 300);
+            }
+
+            updateAdminStats();
+            updatePartnerStats();
+
+            showNotification(`Job #JOB-2024-00${jobId} rejected. Partner has been notified.`, 'info');
+        }
+    }
 }
 
 // === ADMIN SECTION NAVIGATION ===
@@ -681,6 +778,9 @@ function createJob(event) {
 
     // Add to AppState
     AppState.jobs.push(newJob);
+
+    // Save to Storage (CRITICAL: Persist the job)
+    saveJobsToStorage(AppState.jobs);
 
     // Update all views
     loadJobsTable();
@@ -890,7 +990,7 @@ function filterJobs(filter, event) {
             card.style.display = 'block';
         } else if (filter === 'progress' && status === 'progress') {
             card.style.display = 'block';
-        } else if (filter === 'pending' && status === 'pending') {
+        } else if (filter === 'pending' && (status === 'pending' || status === 'pending_approval')) {
             card.style.display = 'block';
         } else if (filter === 'completed' && status === 'completed') {
             card.style.display = 'block';
@@ -907,43 +1007,6 @@ function showJobDetails(jobId) {
 
 function showEarnings() {
     showNotification('Earnings screen - Coming soon', 'info');
-}
-
-function logout() {
-    const confirmed = confirm('Are you sure you want to logout?\n\nClick OK to logout or Cancel to stay logged in.');
-
-    if (confirmed) {
-        // Clear current role
-        AppState.currentRole = null;
-
-        // Clear partner session data
-        sessionStorage.removeItem('currentPartner');
-        sessionStorage.removeItem('partnerRole');
-
-        // Reset partner login form
-        const partnerUsername = document.getElementById('partnerUsername');
-        const partnerPassword = document.getElementById('partnerPassword');
-        if (partnerUsername) partnerUsername.value = '';
-        if (partnerPassword) partnerPassword.value = '';
-
-        // Reset to role selection screen
-        showScreen('roleSelectionScreen');
-
-        // Show success notification
-        showNotification('Logged out successfully', 'info');
-
-        // Reset any active filters or forms
-        const jobFormContainer = document.getElementById('jobFormContainer');
-        if (jobFormContainer) {
-            jobFormContainer.style.display = 'none';
-        }
-
-        // Reset admin section to overview
-        const overviewSection = document.getElementById('adminOverviewSection');
-        if (overviewSection) {
-            overviewSection.classList.add('active');
-        }
-    }
 }
 
 // === NOTIFICATIONS ===
@@ -1048,12 +1111,20 @@ function showNotification(message, type = 'info') {
 
 // === LOGOUT ===
 function logout() {
+    console.log('Logout function called');
+
     // Show confirmation dialog
     const confirmed = confirm('Are you sure you want to logout?');
 
     if (!confirmed) {
+        console.log('Logout cancelled by user');
         return;
     }
+
+    console.log('Logout confirmed, clearing session...');
+
+    // Clear current role from AppState
+    AppState.currentRole = null;
 
     // Clear session data
     sessionStorage.removeItem('currentPartner');
@@ -1064,6 +1135,7 @@ function logout() {
 
     // Return to role selection after a short delay
     setTimeout(() => {
+        console.log('Navigating to role selection screen');
         showScreen('roleSelectionScreen');
 
         // Reset login form
@@ -1071,6 +1143,8 @@ function logout() {
         if (loginForm) {
             loginForm.reset();
         }
+
+        console.log('Logout complete');
     }, 1000);
 }
 

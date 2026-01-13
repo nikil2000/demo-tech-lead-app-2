@@ -499,9 +499,67 @@
                 </form>
             </div>
         </div>
-    </div>
+        <!-- Upload Proof Modal -->
+        <div class="modal" id="uploadProofModal">
+            <div class="modal-overlay" onclick="closeUploadProofModal()"></div>
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Job Completion Proof</h2>
+                    <button class="modal-close" onclick="closeUploadProofModal()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadProofForm" onsubmit="return submitProof(event)">
+                        <input type="hidden" id="uploadJobId">
+                        <p style="color: var(--gray); margin-bottom: 20px;">
+                            Please upload a photo proof of the completed work to submit this job for approval.
+                        </p>
 
-    <script src="partner-app-script.js"></script>
+                        <div class="upload-area" id="dropZone" onclick="document.getElementById('proofFile').click()">
+                            <input type="file" id="proofFile" accept="image/*" style="display: none;"
+                                onchange="handleFileSelect(event)" required>
+                            <div class="upload-placeholder" id="uploadPlaceholder">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" style="color: var(--slt-blue); margin-bottom: 12px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p style="font-weight: 600; color: var(--dark);">Click to Upload Photo</p>
+                                <p style="font-size: 0.8rem; color: var(--gray);">or drag and drop here</p>
+                            </div>
+                            <div class="upload-preview" id="uploadPreview" style="display: none;">
+                                <img id="previewImage" src="" alt="Proof Preview"
+                                    style="max-width: 100%; max-height: 250px; border-radius: 8px;">
+                                <button type="button" class="btn-remove-photo" onclick="removePhoto(event)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn-secondary"
+                                onclick="closeUploadProofModal()">Cancel</button>
+                            <button type="submit" class="btn-primary" id="btnSubmitProof" disabled>
+                                <span>Submit for Approval</span>
+                                <div class="btn-shine"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script src="partner-app-script.js"></script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-// ===================================
+﻿// ===================================
 // ADMIN DASHBOARD - JAVASCRIPT
 // SLT Telecom Platform
 // ===================================
@@ -241,6 +241,11 @@ function showSection(sectionName) {
     if (targetSection) {
         targetSection.classList.add('active');
 
+        // IF APPROVAL SECTION: Load Pending Jobs
+        if (sectionName === 'approval') {
+            displayPendingApprovals();
+        }
+
         // If showing audit logs, populate them
         if (sectionName === 'audit') {
             displayAuditLogs();
@@ -303,7 +308,77 @@ function showSection(sectionName) {
     }
 }
 
-// === JOB APPROVAL ===
+// === APPROVAL LOGIC ===
+function displayPendingApprovals() {
+    const jobs = loadJobsFromStorage();
+    const pendingJobs = jobs.filter(j => j.status === 'pending_approval');
+
+    const container = document.querySelector('.approval-grid');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (pendingJobs.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--gray);">No pending approvals found.</p>';
+        return;
+    }
+
+    pendingJobs.forEach(job => {
+        const card = document.createElement('div');
+        card.className = 'approval-card';
+        card.innerHTML = `
+            <div class="approval-header">
+                <div>
+                    <h4>${job.serviceType}</h4>
+                    <span class="job-id-sm">${job.id}</span>
+                </div>
+                <span class="status-badge status-pending">Pending Review</span>
+            </div>
+            
+            <div class="approval-body">
+                <div class="approval-info">
+                    <p><strong>Partner:</strong> ${job.partner}</p>
+                    <p><strong>Location:</strong> ${job.location}</p>
+                    <p><strong>Submitted:</strong> ${new Date(job.submittedAt || Date.now()).toLocaleDateString()}</p>
+                </div>
+                
+                <div class="proof-preview" style="margin: 12px 0;">
+                     <p style="font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">Proof of Work:</p>
+                     ${job.proofImage ?
+                `<img src="${job.proofImage}" onclick="openImageModal('${job.proofImage}')" 
+                        style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid var(--light-gray);">`
+                : '<p style="color: var(--status-rejected); font-size: 0.8rem;">No image uploaded</p>'}
+                </div>
+                
+                <div class="approval-actions">
+                    <button class="btn-approve" onclick="approveJob('${job.id}')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Approve
+                    </button>
+                    <button class="btn-reject" onclick="rejectJob('${job.id}')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Reject
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// Simple Image Modal (can be improved)
+function openImageModal(src) {
+    const win = window.open("", "Proof Preview", "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=800,height=600");
+    if (win) {
+        win.document.body.innerHTML = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#f0f0f0;"><img src="${src}" style="max-width:100%;max-height:100%;"></div>`;
+    }
+}
+
 function approveJob(jobId) {
     // Check permission
     if (!canAccess(PERMISSIONS.APPROVE_JOBS)) {
@@ -312,39 +387,27 @@ function approveJob(jobId) {
         return;
     }
 
-    const button = event.target.closest('.btn-approve');
-    const card = event.target.closest('.approval-card');
+    // Update Storage
+    let jobs = loadJobsFromStorage();
+    let job = jobs.find(j => j.id === jobId);
 
-    button.innerHTML = '<span>Approving...</span>';
-    button.style.opacity = '0.7';
+    if (job) {
+        job.status = 'completed';
+        job.approvedBy = getCurrentUser().name;
+        job.approvedAt = new Date().toISOString();
+        saveJobsToStorage(jobs);
 
-    setTimeout(() => {
-        // Log job approval
-        logJobAction('approve', `JOB-2024-00${jobId}`, {
-            approvedBy: getCurrentUser().name,
-            timestamp: new Date().toISOString()
-        });
+        // Log action
+        logJobAction('approve', jobId, { approvedBy: getCurrentUser().name });
 
-        showNotification(`Job #JOB-2024-00${jobId} approved successfully!`, 'success');
+        showNotification(`Job ${jobId} approved successfully!`, 'success');
 
-        // Animate card removal
-        card.style.transform = 'scale(0.95)';
-        card.style.opacity = '0';
+        // Refresh List
+        displayPendingApprovals();
 
-        setTimeout(() => {
-            card.remove();
-
-            // Update pending count
-            const badge = document.querySelector('.nav-link .badge');
-            if (badge) {
-                const currentCount = parseInt(badge.textContent);
-                badge.textContent = Math.max(0, currentCount - 1);
-            }
-
-            // Update stats
-            updateAdminStats();
-        }, 300);
-    }, 1000);
+        // Update Stats (Optional: reload stats)
+        updateAdminStats();
+    }
 }
 
 function rejectJob(jobId) {
@@ -355,30 +418,31 @@ function rejectJob(jobId) {
         return;
     }
 
-    const button = event.target.closest('.btn-reject');
+    const reason = prompt("Please enter the reason for rejection:");
+    if (!reason) return;
 
-    button.innerHTML = '<span>Opening rejection form...</span>';
-    button.style.opacity = '0.7';
+    // Update Storage
+    let jobs = loadJobsFromStorage();
+    let job = jobs.find(j => j.id === jobId);
 
-    setTimeout(() => {
-        // Log job rejection
-        logJobAction('reject', `JOB-2024-00${jobId}`, {
-            rejectedBy: getCurrentUser().name,
-            timestamp: new Date().toISOString(),
-            reason: 'Pending user input' // In real app, would show modal for reason
-        });
+    if (job) {
+        job.status = 'in_progress'; // Send back to in_progress
+        job.rejectionReason = reason;
+        job.rejectedBy = getCurrentUser().name;
+        job.rejectedAt = new Date().toISOString();
+        saveJobsToStorage(jobs);
 
-        showNotification(`Rejection form opened for Job #JOB-2024-00${jobId}`, 'info');
-        button.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-            Reject
-        `;
-        button.style.opacity = '1';
-        // In real app, would open modal with rejection reason form
-    }, 500);
+        // Log action
+        logJobAction('reject', jobId, { rejectedBy: getCurrentUser().name, reason: reason });
+
+        showNotification(`Job ${jobId} rejected.`, 'info');
+
+        // Refresh List
+        displayPendingApprovals();
+
+        // Update Stats
+        updateAdminStats();
+    }
 }
 
 // === CREATE JOB MODAL ===
@@ -2108,3 +2172,4 @@ window.checkPasswordStrength = checkPasswordStrength;
 window.handleMyProfileUpdate = handleMyProfileUpdate;
 window.showJobDetails = showJobDetails;
 window.closeJobDetailsModal = closeJobDetailsModal;
+

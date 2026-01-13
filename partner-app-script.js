@@ -464,3 +464,350 @@ window.checkPasswordStrength = checkPasswordStrength;
 window.handlePasswordChange = handlePasswordChange;
 window.showNotification = showNotification;
 window.updateStats = updateStats;
+
+// === SHARED STORAGE HELPERS ===
+function saveJobsToStorage(jobs) {
+    try {
+        localStorage.setItem('platformJobs', JSON.stringify(jobs));
+    } catch (error) {
+        console.error('Error saving jobs to storage:', error);
+    }
+}
+
+function loadJobsFromStorage() {
+    try {
+        const jobsJson = localStorage.getItem('platformJobs');
+        return jobsJson ? JSON.parse(jobsJson) : [];
+    } catch (error) {
+        console.error('Error loading jobs from storage:', error);
+        return [];
+    }
+}
+
+// === UPLOAD PROOF LOGIC ===
+let currentUploadFile = null;
+
+function completeJob(event, jobId) {
+    event.stopPropagation();
+
+    // Open modal instead of direct completion
+    const modal = document.getElementById('uploadProofModal');
+    if (modal) {
+        // Set hidden job ID
+        document.getElementById('uploadJobId').value = jobId;
+        // Reset form
+        document.getElementById('uploadProofForm').reset();
+        removePhoto(null); // Clear preview
+
+        modal.classList.add('active');
+    }
+}
+
+function closeUploadProofModal() {
+    const modal = document.getElementById('uploadProofModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        if (!file.type.startsWith('image/')) {
+            showNotification('Please upload an image file', 'error');
+            return;
+        }
+
+        // Preview
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('previewImage').src = e.target.result;
+            document.getElementById('uploadPlaceholder').style.display = 'none';
+            document.getElementById('uploadPreview').style.display = 'flex';
+            document.getElementById('btnSubmitProof').disabled = false;
+        };
+        reader.readAsDataURL(file);
+        currentUploadFile = file;
+    }
+}
+
+function removePhoto(event) {
+    if (event) event.stopPropagation();
+
+    document.getElementById('proofFile').value = '';
+    document.getElementById('previewImage').src = '';
+    document.getElementById('uploadPlaceholder').style.display = 'block';
+    document.getElementById('uploadPreview').style.display = 'none';
+    document.getElementById('btnSubmitProof').disabled = true;
+    currentUploadFile = null;
+}
+
+function submitProof(event) {
+    event.preventDefault();
+
+    if (!currentUploadFile) {
+        showNotification('Please upload a photo proof', 'error');
+        return false;
+    }
+
+    const jobId = document.getElementById('uploadJobId').value;
+    const button = document.getElementById('btnSubmitProof');
+
+    button.innerHTML = '<span>Uploading...</span>';
+    button.style.opacity = '0.7';
+
+    // Convert to Base64 and Save
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const base64Image = e.target.result;
+
+        setTimeout(() => {
+            // Update Job Status
+            submitJobStatusUpdate(jobId, base64Image);
+
+            // Close Modal
+            closeUploadProofModal();
+            button.innerHTML = '<span>Submit for Approval</span><div class="btn-shine"></div>';
+            button.style.opacity = '1';
+
+            showNotification(`Job submitted for approval!`, 'success');
+        }, 1500);
+    };
+    reader.readAsDataURL(currentUploadFile);
+
+    return false;
+}
+
+function submitJobStatusUpdate(jobId, proofImage) {
+    // 1. Update UI
+    const numericId = parseInt(jobId); // Assuming IDs passed are 1, 2, etc.
+    // Logic to find the correct card based on ID or button click context would be better, 
+    // but here we might need to refresh the whole list if we want to be clean.
+    // For now, let's just find the card if we can, or just refresh.
+
+    // In this prototype, IDs are 1, 2, 3. The cards are hardcoded.
+    // We should ideally transition the hardcoded cards to dynamic too, but to save scope,
+    // let's update the DOM if it matches.
+
+    // Find card with onclick having this ID
+    // Since we don't have easy selectors for "onclick argument", let's rely on filterJobs or refresh.
+    // But we can iterate.
+
+    // Update LocalStorage (The Real Source of Truth)
+    let jobs = loadJobsFromStorage();
+    let job = jobs.find(j => j.id.endsWith(numericId) || j.id === jobId);
+
+    // If job doesn't exist in storage (because it's a hardcoded demo job), create it?
+    // The demo jobs (1, 2, 3) are hardcoded in HTML.
+    // If we want to persist state, we should probably load them into storage if empty.
+
+    if (!job) {
+        // Create mock job in storage so Admin can see it
+        job = {
+            id: `JOB-2024-00${numericId}`,
+            serviceType: 'Demo Service',
+            location: 'Demo Location',
+            region: 'Western Province',
+            payment: 'LKR 15,000',
+            deadline: 'Dec 25, 2024',
+            partner: 'Kamal Silva',
+            status: 'assigned',
+            createdBy: 'System'
+        };
+        jobs.push(job);
+    }
+
+    job.status = 'pending_approval';
+    job.proofImage = proofImage;
+    job.submittedAt = new Date().toISOString();
+
+    saveJobsToStorage(jobs);
+
+    // Update UI Card
+    // Simple DOM manipulation for the demo
+    // We need to re-find the card. Since we don't have a clean way, let's reload or mock it.
+    // Let's implement a simple UI update function.
+    updateCardToPending(numericId);
+}
+
+function updateCardToPending(jobId) {
+    // Find buttons that call completeJob(event, jobId)
+    const buttons = document.querySelectorAll(`button[onclick="completeJob(event, ${jobId})"]`);
+    buttons.forEach(btn => {
+        const card = btn.closest('.job-card');
+        if (card) {
+            card.setAttribute('data-status', 'pending');
+            // Update Header Status
+            const statusBadge = card.querySelector('.job-status');
+            if (statusBadge) {
+                statusBadge.className = 'job-status status-pending';
+                statusBadge.textContent = 'Pending Approval';
+            }
+
+            // Update Body Actions
+            const actionsDiv = card.querySelector('.job-actions');
+            if (actionsDiv) {
+                actionsDiv.innerHTML = `
+                    <div class="pending-indicator">
+                        <div class="pulse-dot"></div>
+                        <span>Waiting for admin review...</span>
+                    </div>
+                `;
+            }
+
+            // Update Progress/Status
+            // Remove progress bar if exists
+            const progressBar = card.querySelector('.progress-bar');
+            if (progressBar) progressBar.remove();
+
+            const progressText = card.querySelector('.progress-text');
+            if (progressText) progressText.remove();
+        }
+    });
+    updateStats();
+}
+
+// === INIT & POLLING ===
+document.addEventListener('DOMContentLoaded', () => {
+    initJobStates();
+    // Check for approved/rejected jobs
+    setInterval(checkForUpdates, 5000);
+});
+
+function initJobStates() {
+    console.log('Initializing Job States from Storage...');
+    const jobs = loadJobsFromStorage();
+
+    jobs.forEach(job => {
+        updateUiForJobState(job);
+    });
+}
+
+function checkForUpdates() {
+    const jobs = loadJobsFromStorage();
+    jobs.forEach(job => {
+        updateUiForJobState(job);
+    });
+}
+
+function updateUiForJobState(job) {
+    // Simple heuristic for demo: Look for DOM elements with matching ID suffix
+    const suffix = job.id.split('-').pop(); // e.g. "001" or "1"
+    const numericId = parseInt(suffix);
+
+    // Select all cards
+    const cards = document.querySelectorAll('.job-card');
+    cards.forEach(card => {
+        // Try to extract ID from card
+        const idText = card.querySelector('.job-number').textContent; // #JOB-2024-001
+
+        // Match Card
+        if (idText.includes(job.id) || (idText.endsWith(numericId) && numericId < 1000)) {
+            const currentUiStatus = card.getAttribute('data-status');
+
+            // 1. PENDING APPROVAL
+            if (job.status === 'pending_approval' && currentUiStatus !== 'pending') {
+                // Force UI to pending
+                updateCardToPending(numericId);
+            }
+
+            // 2. REJECTED (Storage: in_progress with reason)
+            if (job.status === 'in_progress' && job.rejectionReason) {
+                // If UI is pending, revert it. 
+                // If UI is already progress, ensure note is shown.
+                if (currentUiStatus === 'pending' || !card.querySelector('.rejection-note')) {
+                    revertToInProgress(card, numericId, job.rejectionReason);
+                }
+            }
+
+            // 3. COMPLETED
+            if (job.status === 'completed' && currentUiStatus !== 'completed') {
+                markAsCompleted(card);
+            }
+        }
+    });
+}
+
+function revertToInProgress(card, id, reason) {
+    // Ensure card is visible if it was hidden
+    card.style.display = 'block';
+    card.setAttribute('data-status', 'progress');
+
+    // Badge
+    const badge = card.querySelector('.job-status');
+    if (badge) {
+        badge.className = 'job-status status-progress';
+        badge.textContent = 'In Progress';
+    }
+
+    // Actions - Restore "Mark Complete" button if not present
+    const actionsDiv = card.querySelector('.job-actions');
+    if (actionsDiv && !actionsDiv.querySelector('.btn-complete')) {
+        actionsDiv.innerHTML = `
+            <button class="btn-complete" onclick="completeJob(event, ${id})">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Mark Complete
+            </button>
+        `;
+    }
+
+    // Add Rejection Note
+    let note = card.querySelector('.rejection-note');
+    if (!note && reason) {
+        note = document.createElement('div');
+        note.className = 'rejection-note';
+        note.style.color = 'var(--status-rejected)';
+        note.style.background = 'rgba(239, 68, 68, 0.1)';
+        note.style.padding = '10px';
+        note.style.borderRadius = '8px';
+        note.style.marginTop = '10px';
+        note.style.fontSize = '0.9rem';
+
+        // Insert before actions
+        if (actionsDiv) {
+            actionsDiv.parentNode.insertBefore(note, actionsDiv);
+        }
+    }
+    if (note) {
+        note.innerHTML = `<strong>Admin Rejected:</strong> ${reason}`;
+    }
+
+    updateStats();
+}
+
+function markAsCompleted(card) {
+    // If it's already completed in UI, do nothing
+    if (card.getAttribute('data-status') === 'completed') return;
+
+    card.setAttribute('data-status', 'completed');
+
+    // Visual update for completed state
+    const badge = card.querySelector('.job-status');
+    if (badge) {
+        badge.className = 'job-status status-completed';
+        badge.textContent = 'Completed';
+    }
+
+    // Hide actions
+    const actionsDiv = card.querySelector('.job-actions');
+    if (actionsDiv) actionsDiv.innerHTML = '';
+
+    // Remove progress bar if exists
+    const progressBar = card.querySelector('.progress-bar');
+    if (progressBar) progressBar.remove();
+
+    const progressText = card.querySelector('.progress-text');
+    if (progressText) progressText.remove();
+
+    showNotification('Job approved and completed!', 'success');
+    updateStats();
+}
+
+window.completeJob = completeJob;
+window.handleFileSelect = handleFileSelect;
+window.submitProof = submitProof;
+window.removePhoto = removePhoto;
+window.closeUploadProofModal = closeUploadProofModal;
