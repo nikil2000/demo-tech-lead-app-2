@@ -48,6 +48,46 @@ const AppState = {
     currentRole: null
 };
 
+// === SHARED JOB STORAGE ===
+/**
+ * Load jobs from localStorage
+ */
+function loadJobsFromStorage() {
+    try {
+        const jobsJson = localStorage.getItem('platformJobs');
+        return jobsJson ? JSON.parse(jobsJson) : [];
+    } catch (error) {
+        console.error('Error loading jobs from storage:', error);
+        return [];
+    }
+}
+
+/**
+ * Save jobs to localStorage
+ */
+function saveJobsToStorage(jobs) {
+    try {
+        localStorage.setItem('platformJobs', JSON.stringify(jobs));
+    } catch (error) {
+        console.error('Error saving jobs to storage:', error);
+    }
+}
+
+/**
+ * Initialize jobs in storage if empty
+ */
+function initializeJobsStorage() {
+    const existingJobs = loadJobsFromStorage();
+    if (existingJobs.length === 0) {
+        // Initialize with default demo jobs
+        saveJobsToStorage(AppState.jobs);
+        console.log('Initialized job storage with default jobs');
+    }
+}
+
+// Initialize jobs storage on page load
+initializeJobsStorage();
+
 // === SCREEN NAVIGATION ===
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
@@ -165,10 +205,13 @@ function loadPartnerJobs() {
     const currentPartner = currentPartnerJson ? JSON.parse(currentPartnerJson) : null;
     const partnerRegion = currentPartner ? currentPartner.region : null;
 
+    // Load jobs from localStorage instead of AppState
+    const allJobs = loadJobsFromStorage();
+
     // Filter jobs by partner's region
     const filteredJobs = partnerRegion
-        ? AppState.jobs.filter(job => job.region === partnerRegion)
-        : AppState.jobs;
+        ? allJobs.filter(job => job.region === partnerRegion)
+        : allJobs;
 
     if (filteredJobs.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: var(--gray); padding: 40px;">No jobs available in your region</p>';

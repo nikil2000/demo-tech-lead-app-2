@@ -3,6 +3,31 @@
 // SLT Telecom Platform
 // ===================================
 
+// === SHARED JOB STORAGE ===
+/**
+ * Save jobs to localStorage
+ */
+function saveJobsToStorage(jobs) {
+    try {
+        localStorage.setItem('platformJobs', JSON.stringify(jobs));
+    } catch (error) {
+        console.error('Error saving jobs to storage:', error);
+    }
+}
+
+/**
+ * Load jobs from localStorage
+ */
+function loadJobsFromStorage() {
+    try {
+        const jobsJson = localStorage.getItem('platformJobs');
+        return jobsJson ? JSON.parse(jobsJson) : [];
+    } catch (error) {
+        console.error('Error loading jobs from storage:', error);
+        return [];
+    }
+}
+
 // === SCREEN NAVIGATION ===
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
@@ -442,6 +467,15 @@ function handleCreateJob(event) {
         createdBy: getCurrentUser().name
     });
 
+    // Load existing jobs from storage
+    const existingJobs = loadJobsFromStorage();
+
+    // Add new job to the array
+    existingJobs.push(newJob);
+
+    // Save updated jobs back to storage
+    saveJobsToStorage(existingJobs);
+
     // Add job to the table
     addJobToTable(newJob);
 
@@ -449,10 +483,10 @@ function handleCreateJob(event) {
     closeCreateJobModal();
 
     // Show success notification
-    showNotification(`Job ${jobId} created successfully!`, 'success');
+    showNotification(`Job ${jobId} created successfully and assigned to ${region}!`, 'success');
 
     // In real app, would save to backend and refresh job list
-    console.log('New job created:', newJob);
+    console.log('New job created and saved to storage:', newJob);
 
     return false;
 }
