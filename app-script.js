@@ -92,8 +92,42 @@ function initializeJobsStorage() {
     }
 }
 
+/**
+ * Initialize users in storage if empty
+ */
+function initializeUsersStorage() {
+    const existingUsers = localStorage.getItem('platformUsers');
+    if (!existingUsers) {
+        const defaultUsers = [
+            {
+                id: 1,
+                name: 'Nikil',
+                username: 'nikil',
+                email: 'nikil@example.com',
+                password: 'nikil1',
+                role: 'tech_lead_partner',
+                region: 'Western Province', // Default region for demo
+                nvq: 'NVQ-2024-001',
+                mobile: '+94 77 123 4567'
+            },
+            {
+                id: 2,
+                name: 'Admin User',
+                username: 'admin',
+                email: 'admin@slt.lk',
+                password: 'admin123',
+                role: 'admin',
+                region: 'All'
+            }
+        ];
+        localStorage.setItem('platformUsers', JSON.stringify(defaultUsers));
+        console.log('Initialized user storage with default users');
+    }
+}
+
 // Initialize jobs storage on page load
 initializeJobsStorage();
+initializeUsersStorage();
 
 // === REAL-TIME SYNC ===
 // Poll storage for updates (e.g. from other tabs or concurrent persistence updates)
@@ -487,8 +521,11 @@ function updateAdminStats() {
 
 // === JOB ACTIONS ===
 // === JOB ACTIONS ===
+// === JOB ACTIONS ===
 function acceptJob(jobId) {
-    const job = AppState.jobs.find(j => j.id === jobId);
+    // Parse ID to ensure it matches storage type (number)
+    const id = parseInt(jobId);
+    const job = AppState.jobs.find(j => j.id === id);
     if (job) {
         job.status = 'progress';
         job.progress = 10;
@@ -498,16 +535,17 @@ function acceptJob(jobId) {
 
         loadPartnerJobs();
         updatePartnerStats();
-        showNotification(`Job #JOB-2024-00${jobId} accepted successfully!`, 'success');
+        showNotification(`Job #JOB-2024-00${id} accepted successfully!`, 'success');
     }
 }
 
 function completeJob(jobId) {
-    // Store the job ID for later use
-    AppState.currentJobId = jobId;
+    // Store the job ID for later use (ensure it's a number)
+    const id = parseInt(jobId);
+    AppState.currentJobId = id;
 
     // Open image upload modal
-    openImageUploadModal(jobId);
+    openImageUploadModal(id);
 }
 
 // === IMAGE UPLOAD FOR JOB COMPLETION ===
@@ -515,9 +553,13 @@ let uploadedFiles = [];
 
 function openImageUploadModal(jobId) {
     const modal = document.getElementById('imageUploadModal');
-    const job = AppState.jobs.find(j => j.id === jobId);
+    // Ensure ID comparison is loose or types match
+    const job = AppState.jobs.find(j => j.id == jobId);
 
-    if (!job) return;
+    if (!modal || !job) {
+        console.error('Modal or job not found', { modal, job, jobId });
+        return;
+    }
 
     // Reset uploaded files
     uploadedFiles = [];
@@ -529,7 +571,7 @@ function openImageUploadModal(jobId) {
 
 function closeImageUpload(event) {
     const modal = document.getElementById('imageUploadModal');
-    if (!event || event.target === modal) {
+    if (!event || event.target === modal || event.target.closest('.modal-close') || event.target.closest('.btn-cancel')) {
         modal.classList.remove('active');
         uploadedFiles = [];
         document.getElementById('uploadedImages').innerHTML = '';
@@ -613,7 +655,8 @@ function submitJobCompletion() {
 }
 
 function approveJob(jobId) {
-    const job = AppState.jobs.find(j => j.id === jobId);
+    const id = parseInt(jobId);
+    const job = AppState.jobs.find(j => j.id === id);
     if (job) {
         job.status = 'completed';
 
@@ -624,7 +667,7 @@ function approveJob(jobId) {
         saveJobsToStorage(AppState.jobs);
 
         // Remove from admin approvals in UI immediately for responsiveness
-        const card = document.getElementById(`approval-card-${jobId}`);
+        const card = document.getElementById(`approval-card-${id}`);
         if (card) {
             card.style.transform = 'scale(0.95)';
             card.style.opacity = '0';
@@ -638,7 +681,7 @@ function approveJob(jobId) {
         updateAdminStats();
         updatePartnerStats();
 
-        showNotification(`Job #JOB-2024-00${jobId} approved successfully!`, 'success');
+        showNotification(`Job #JOB-2024-00${id} approved successfully!`, 'success');
     }
 }
 
@@ -647,9 +690,10 @@ function raiseIssue(jobId) {
 }
 
 function rejectJob(jobId) {
+    const id = parseInt(jobId);
     const reason = prompt("Please enter the reason for rejection:", "Photos are not clear");
     if (reason) {
-        const job = AppState.jobs.find(j => j.id === jobId);
+        const job = AppState.jobs.find(j => j.id === id);
         if (job) {
             job.status = 'progress'; // Revert to In Progress
             job.rejectionReason = reason;
@@ -658,7 +702,7 @@ function rejectJob(jobId) {
             saveJobsToStorage(AppState.jobs);
 
             // Remove from admin approvals UI
-            const card = document.getElementById(`approval-card-${jobId}`);
+            const card = document.getElementById(`approval-card-${id}`);
             if (card) {
                 card.style.opacity = '0';
                 setTimeout(() => {
@@ -670,7 +714,7 @@ function rejectJob(jobId) {
             updateAdminStats();
             updatePartnerStats();
 
-            showNotification(`Job #JOB-2024-00${jobId} rejected. Partner has been notified.`, 'info');
+            showNotification(`Job #JOB-2024-00${id} rejected. Partner has been notified.`, 'info');
         }
     }
 }
