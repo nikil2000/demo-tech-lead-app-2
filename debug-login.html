@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Login Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Super Admin Login Debug Tool</h1>
+    
+    <div class="test-section">
+        <h2>Step 1: Check if Scripts are Loaded</h2>
+        <div id="scriptsCheck"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Check localStorage</h2>
+        <button onclick="checkLocalStorage()">Check platformUsers in localStorage</button>
+        <div id="storageCheck"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Initialize Default Users</h2>
+        <button onclick="manualInitialize()">Manually Initialize Default Users</button>
+        <div id="initCheck"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 4: Test Login</h2>
+        <button onclick="testLogin()">Test Login with admin/admin123/super_admin</button>
+        <div id="loginCheck"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 5: Clear and Reset</h2>
+        <button onclick="clearStorage()">Clear All Users from localStorage</button>
+        <div id="clearCheck"></div>
+    </div>
+
+    <script src="permissions.js"></script>
+    <script src="audit-logger.js"></script>
+    <script src="admin-dashboard-script.js"></script>
+
+    <script>
+        // Check if scripts loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            const scriptsDiv = document.getElementById('scriptsCheck');
+            let html = '';
+
+            if (typeof ROLES !== 'undefined') {
+                html += '<div class="result success">✓ permissions.js loaded - ROLES defined</div>';
+                html += '<pre>' + JSON.stringify(ROLES, null, 2) + '</pre>';
+            } else {
+                html += '<div class="result error">✗ permissions.js NOT loaded - ROLES undefined</div>';
+            }
+
+            if (typeof loadUsers === 'function') {
+                html += '<div class="result success">✓ admin-dashboard-script.js loaded - loadUsers() exists</div>';
+            } else {
+                html += '<div class="result error">✗ admin-dashboard-script.js NOT loaded</div>';
+            }
+
+            if (typeof initializeDefaultUsers === 'function') {
+                html += '<div class="result success">✓ initializeDefaultUsers() function exists</div>';
+            } else {
+                html += '<div class="result error">✗ initializeDefaultUsers() function NOT found</div>';
+            }
+
+            scriptsDiv.innerHTML = html;
+        });
+
+        function checkLocalStorage() {
+            const div = document.getElementById('storageCheck');
+            const usersJson = localStorage.getItem('platformUsers');
+            
+            if (!usersJson) {
+                div.innerHTML = '<div class="result error">✗ No platformUsers found in localStorage</div>';
+                return;
+            }
+
+            try {
+                const users = JSON.parse(usersJson);
+                div.innerHTML = `
+                    <div class="result success">✓ Found ${users.length} user(s) in localStorage</div>
+                    <pre>${JSON.stringify(users, null, 2)}</pre>
+                `;
+            } catch (e) {
+                div.innerHTML = `<div class="result error">✗ Error parsing platformUsers: ${e.message}</div>`;
+            }
+        }
+
+        function manualInitialize() {
+            const div = document.getElementById('initCheck');
+            
+            if (typeof initializeDefaultUsers !== 'function') {
+                div.innerHTML = '<div class="result error">✗ initializeDefaultUsers() function not found</div>';
+                return;
+            }
+
+            try {
+                initializeDefaultUsers();
+                div.innerHTML = '<div class="result success">✓ initializeDefaultUsers() called successfully</div>';
+                
+                // Check what was created
+                setTimeout(() => {
+                    const users = loadUsers();
+                    div.innerHTML += `<div class="result info">Users in storage: ${users.length}</div>`;
+                    div.innerHTML += `<pre>${JSON.stringify(users, null, 2)}</pre>`;
+                }, 100);
+            } catch (e) {
+                div.innerHTML = `<div class="result error">✗ Error calling initializeDefaultUsers(): ${e.message}</div>`;
+            }
+        }
+
+        function testLogin() {
+            const div = document.getElementById('loginCheck');
+            
+            const username = 'admin';
+            const password = 'admin123';
+            const role = 'super_admin';
+
+            div.innerHTML = '<div class="result info">Testing login...</div>';
+
+            try {
+                const allUsers = loadUsers();
+                div.innerHTML += `<div class="result info">Total users in storage: ${allUsers.length}</div>`;
+
+                // Try to find the user
+                const user = allUsers.find(u =>
+                    (u.username === username || u.email === username) &&
+                    u.password === password &&
+                    u.role === role
+                );
+
+                if (user) {
+                    div.innerHTML += '<div class="result success">✓ LOGIN SUCCESSFUL!</div>';
+                    div.innerHTML += `<pre>${JSON.stringify(user, null, 2)}</pre>`;
+                } else {
+                    div.innerHTML += '<div class="result error">✗ LOGIN FAILED - User not found</div>';
+                    
+                    // Debug: Check each condition
+                    const userByUsername = allUsers.find(u => u.username === username || u.email === username);
+                    if (!userByUsername) {
+                        div.innerHTML += '<div class="result error">No user with username "admin"</div>';
+                    } else {
+                        div.innerHTML += `<div class="result info">Found user: ${userByUsername.username}</div>`;
+                        
+                        if (userByUsername.password !== password) {
+                            div.innerHTML += `<div class="result error">Password mismatch: "${userByUsername.password}" !== "${password}"</div>`;
+                        }
+                        
+                        if (userByUsername.role !== role) {
+                            div.innerHTML += `<div class="result error">Role mismatch: "${userByUsername.role}" !== "${role}"</div>`;
+                        }
+                    }
+                    
+                    div.innerHTML += '<div class="result info">All users:</div>';
+                    div.innerHTML += `<pre>${JSON.stringify(allUsers, null, 2)}</pre>`;
+                }
+            } catch (e) {
+                div.innerHTML += `<div class="result error">✗ Error during login test: ${e.message}</div>`;
+            }
+        }
+
+        function clearStorage() {
+            const div = document.getElementById('clearCheck');
+            localStorage.removeItem('platformUsers');
+            div.innerHTML = '<div class="result success">✓ Cleared platformUsers from localStorage</div>';
+            div.innerHTML += '<div class="result info">Refresh the page and run Step 3 to recreate default users</div>';
+        }
+    </script>
+</body>
+</html>

@@ -181,8 +181,14 @@ function adminLogin(event) {
     const password = document.getElementById('adminPassword').value;
     const role = document.getElementById('adminRole').value;
 
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('Username:', username);
+    console.log('Password:', password);
+    console.log('Role:', role);
+
     // Validate all fields
     if (!username || !password || !role) {
+        console.error('Validation failed: Missing fields');
         showNotification('Please fill in all fields including role selection', 'error');
         return false;
     }
@@ -195,12 +201,16 @@ function adminLogin(event) {
     setTimeout(() => {
         // Load all users from storage
         let allUsers = loadUsers();
+        console.log('Total users in storage:', allUsers.length);
+        console.log('All users:', allUsers);
 
         // Check if admin user exists
         const adminUser = allUsers.find(u => u.username === 'admin');
+        console.log('Admin user exists?', !!adminUser);
 
         // If admin user doesn't exist and trying to login as admin, create default admin
         if (!adminUser && username === 'admin' && password === 'admin123') {
+            console.log('Creating default admin user...');
             const defaultAdmin = {
                 id: 'USER-ADMIN-001',
                 username: 'admin',
@@ -213,32 +223,57 @@ function adminLogin(event) {
                 createdBy: 'SYSTEM',
                 createdAt: new Date().toISOString()
             };
+            console.log('Default admin object:', defaultAdmin);
+            console.log('ROLES.SUPER_ADMIN value:', ROLES.SUPER_ADMIN);
             addUser(defaultAdmin);
             allUsers = loadUsers(); // Reload after adding
             console.log('Default Super Admin created during login');
+            console.log('Users after creation:', allUsers);
         }
 
         // Find user by username or email
+        console.log('Searching for user with:');
+        console.log('  - username or email:', username);
+        console.log('  - password:', password);
+        console.log('  - role:', role);
+
         const user = allUsers.find(u =>
             (u.username === username || u.email === username) &&
             u.password === password &&
             u.role === role
         );
 
+        console.log('User found?', !!user);
+        if (user) {
+            console.log('Matched user:', user);
+        }
+
         if (!user) {
             // Authentication failed
+            console.error('=== AUTHENTICATION FAILED ===');
             button.innerHTML = '<span>Sign In</span><div class="btn-shine"></div>';
             button.style.opacity = '1';
 
             // Provide helpful error message
             const userExists = allUsers.find(u => u.username === username || u.email === username);
+            console.log('User exists (by username/email)?', !!userExists);
+
             if (!userExists) {
+                console.error('Error: Username not found');
                 showNotification('Username not found. Please check your username.', 'error');
             } else if (userExists && userExists.password !== password) {
+                console.error('Error: Password mismatch');
+                console.log('Expected password:', userExists.password);
+                console.log('Provided password:', password);
                 showNotification('Incorrect password. Please try again.', 'error');
             } else if (userExists && userExists.role !== role) {
+                console.error('Error: Role mismatch');
+                console.log('User role:', userExists.role);
+                console.log('Selected role:', role);
+                console.log('ROLE_NAMES:', ROLE_NAMES);
                 showNotification(`Incorrect role. This user is a ${ROLE_NAMES[userExists.role]}.`, 'error');
             } else {
+                console.error('Error: Unknown authentication failure');
                 showNotification('Invalid username, password, or role. Please try again.', 'error');
             }
             return false;
@@ -1557,6 +1592,22 @@ function loadUsers() {
 }
 
 /**
+ * Save users to localStorage
+ * @param {array} users - Array of user objects to save
+ * @returns {boolean} Success status
+ */
+function saveUsers(users) {
+    try {
+        localStorage.setItem('platformUsers', JSON.stringify(users));
+        console.log('Users saved successfully');
+        return true;
+    } catch (error) {
+        console.error('Error saving users:', error);
+        return false;
+    }
+}
+
+/**
  * Get all users from storage
  * @returns {array} Array of all users
  */
@@ -2246,6 +2297,41 @@ function closeJobDetailsModal() {
     document.getElementById('jobDetailsModal').classList.remove('active');
 }
 
+// === USER INITIALIZATION ===
+/**
+ * Initialize default users if they don't exist
+ * Creates a default Super Admin user for first-time setup
+ */
+function initializeDefaultUsers() {
+    const users = loadUsers();
+
+    // Check if super admin already exists
+    const superAdminExists = users.some(u => u.role === ROLES.SUPER_ADMIN);
+
+    if (!superAdminExists) {
+        console.log('No Super Admin found. Creating default Super Admin...');
+
+        const defaultSuperAdmin = {
+            id: 'USER-ADMIN-001',
+            username: 'admin',
+            name: 'System Administrator',
+            email: 'admin@slt.lk',
+            password: 'admin123',
+            defaultPassword: 'admin123',
+            role: ROLES.SUPER_ADMIN,
+            region: null,
+            createdBy: 'SYSTEM',
+            createdAt: new Date().toISOString()
+        };
+
+        addUser(defaultSuperAdmin);
+        console.log('Default Super Admin created successfully');
+        console.log('Login credentials: username=admin, password=admin123, role=super_admin');
+    } else {
+        console.log('Super Admin already exists');
+    }
+}
+
 // Export functions
 window.adminLogin = adminLogin;
 window.showSection = showSection;
@@ -2288,12 +2374,20 @@ window.handleMyProfileUpdate = handleMyProfileUpdate;
 window.showJobDetails = showJobDetails;
 window.closeJobDetailsModal = closeJobDetailsModal;
 
+// User management functions
+window.initializeDefaultUsers = initializeDefaultUsers;
+window.loadUsers = loadUsers;
+window.addUser = addUser;
+
 // === INITIALIZATION ===
 /**
  * Initialize the dashboard when DOM is loaded
  */
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Admin Dashboard: Initializing...');
+
+    // Initialize default users (creates super admin if not exists)
+    initializeDefaultUsers();
 
     // Load jobs from localStorage on initial page load
     // This ensures jobs are displayed when admin logs in
