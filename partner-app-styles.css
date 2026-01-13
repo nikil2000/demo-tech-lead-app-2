@@ -32,7 +32,7 @@
     --gradient-primary: linear-gradient(135deg, #0066CC 0%, #3385D6 100%);
     --gradient-accent: linear-gradient(135deg, #FF6B35 0%, #E55A2B 100%);
     --gradient-success: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-bg: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
 
     /* Shadows */
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -113,7 +113,7 @@ body {
 
 .shape {
     position: absolute;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 50%;
     animation: float 20s infinite ease-in-out;
 }
