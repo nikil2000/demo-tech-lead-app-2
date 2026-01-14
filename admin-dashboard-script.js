@@ -301,6 +301,9 @@ function adminLogin(event) {
             createJobBtn.style.display = 'none';
         }
 
+        // Update statistics after dashboard is shown
+        updateAdminStats();
+
         // Reset button
         button.innerHTML = '<span>Sign In</span><div class="btn-shine"></div>';
         button.style.opacity = '1';
@@ -561,6 +564,131 @@ function rejectJob(jobId) {
     }
 }
 
+// === DELETE JOB ===
+function deleteJob(jobId) {
+    console.log('Delete job called with ID:', jobId);
+
+    // Show confirmation dialog
+    const confirmed = confirm(`Are you sure you want to delete Job #${jobId}?\n\nThis action cannot be undone.`);
+
+    if (!confirmed) {
+        console.log('Job deletion cancelled by user');
+        return;
+    }
+
+    // Load jobs from storage
+    const allJobs = loadJobsFromStorage();
+
+    // Find job index by ID
+    const jobIndex = allJobs.findIndex(j => j.id == jobId || j.id === jobId);
+
+    if (jobIndex !== -1) {
+        const deletedJob = allJobs[jobIndex];
+        console.log('Job found, deleting:', deletedJob);
+
+        // Remove job from array
+        allJobs.splice(jobIndex, 1);
+
+        // Save to Storage
+        saveJobsToStorage(allJobs);
+
+        // Find and remove the row from the table with animation
+        const rows = document.querySelectorAll('#jobsSection table tbody tr');
+        rows.forEach(row => {
+            const jobIdCell = row.querySelector('.job-id-link');
+            if (jobIdCell && jobIdCell.textContent.includes(jobId)) {
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(20px)';
+                setTimeout(() => {
+                    row.remove();
+                }, 300);
+            }
+        });
+
+        // Update stats
+        updateAdminStats();
+
+        showNotification(`Job #${jobId} deleted successfully!`, 'success');
+    } else {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
+    }
+}
+
+// === VIEW JOB DETAILS ===
+function viewJobDetails(jobId) {
+    console.log('View job details called with ID:', jobId);
+
+    // Load jobs from storage
+    const allJobs = loadJobsFromStorage();
+
+    // Find job by ID
+    const job = allJobs.find(j => j.id == jobId || j.id === jobId);
+
+    if (!job) {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
+        return;
+    }
+
+    // Populate modal with job details
+    document.getElementById('jobDetailsId').textContent = `#${job.id}`;
+    document.getElementById('jobDetailsTitle').textContent = job.serviceType || job.title || 'N/A';
+    document.getElementById('jobDetailsLocation').textContent = job.location || 'N/A';
+    document.getElementById('jobDetailsPartner').textContent = job.partner || 'Unassigned';
+    document.getElementById('jobDetailsPayment').textContent = job.payment || 'N/A';
+    document.getElementById('jobDetailsDeadline').textContent = job.deadline || 'N/A';
+    document.getElementById('jobDetailsService').textContent = job.serviceType || job.title || 'N/A';
+    document.getElementById('jobDetailsDescription').textContent = job.description || 'No description provided';
+
+    // Set status badge
+    const statusBadge = document.getElementById('jobDetailsStatus');
+    const statusMap = {
+        'assigned': { text: 'Assigned', class: 'status-assigned' },
+        'progress': { text: 'In Progress', class: 'status-progress' },
+        'in_progress': { text: 'In Progress', class: 'status-progress' },
+        'pending': { text: 'Pending Approval', class: 'status-pending' },
+        'pending_approval': { text: 'Pending Approval', class: 'status-pending' },
+        'completed': { text: 'Completed', class: 'status-completed' }
+    };
+
+    const status = statusMap[job.status] || { text: job.status, class: 'status-assigned' };
+    statusBadge.textContent = status.text;
+    statusBadge.className = `status-badge ${status.class}`;
+
+    // Set created date if available
+    if (job.createdAt) {
+        const createdDate = new Date(job.createdAt);
+        document.getElementById('jobDetailsCreated').textContent = createdDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    }
+
+    // Set priority (default to Medium if not specified)
+    document.getElementById('jobDetailsPriority').textContent = job.priority || 'Medium';
+
+    // Show the modal
+    const modal = document.getElementById('jobDetailsModal');
+    if (modal) {
+        modal.classList.add('active');
+        console.log('Job details modal opened for job:', job);
+    } else {
+        console.error('Job details modal not found');
+        showNotification('Could not open job details', 'error');
+    }
+}
+
+// Close job details modal
+function closeJobDetailsModal() {
+    const modal = document.getElementById('jobDetailsModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+
 // === CREATE JOB MODAL ===
 /**
  * Load tech lead partners into the assignment dropdown
@@ -722,12 +850,22 @@ function addJobToTable(job) {
         <td><span class="status-badge status-assigned">Assigned</span></td>
         <td>${job.payment}</td>
         <td>
-            <button class="btn-icon" title="View Details">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-            </button>
+            <div class="action-buttons">
+                <button class="btn-view-job" onclick="viewJobDetails('${job.id}')" title="View Details">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+                <button class="btn-delete-job" onclick="deleteJob('${job.id}')" title="Delete Job">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            </div>
         </td>
     `;
 
@@ -748,12 +886,32 @@ function addJobToTable(job) {
 
 // === STATS UPDATE ===
 function updateAdminStats() {
-    // Simulate stats update
-    const completedStat = document.querySelector('.stat-green .stat-value-admin');
-    if (completedStat) {
-        const currentValue = parseInt(completedStat.textContent);
-        animateValue(completedStat, currentValue + 1);
-    }
+    // Load jobs from storage to ensure accuracy
+    const allJobs = loadJobsFromStorage();
+    const allUsers = loadUsers();
+
+    // Calculate job statistics
+    const total = allJobs.length;
+    const pending = allJobs.filter(j => j.status === 'pending_approval').length;
+    const completed = allJobs.filter(j => j.status === 'completed').length;
+
+    // Calculate active partners (tech-lead partners)
+    const activePartners = allUsers.filter(u => u.role === 'tech_lead_partner').length;
+
+    // Update DOM elements
+    const totalEl = document.getElementById('adminTotalJobs');
+    const pendingEl = document.getElementById('adminPendingApprovals');
+    const completedEl = document.getElementById('adminCompletedJobs');
+    const partnersEl = document.getElementById('adminActivePartners');
+    const badgeEl = document.getElementById('adminPendingBadge');
+
+    if (totalEl) totalEl.textContent = total;
+    if (pendingEl) pendingEl.textContent = pending;
+    if (completedEl) completedEl.textContent = completed;
+    if (partnersEl) partnersEl.textContent = activePartners;
+    if (badgeEl) badgeEl.textContent = pending;
+
+    console.log('Admin stats updated:', { total, pending, completed, activePartners });
 }
 
 function animateValue(element, newValue) {

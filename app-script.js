@@ -196,6 +196,31 @@ function backToRoleSelection() {
     showScreen('roleSelectionScreen');
 }
 
+// === LOGOUT ===
+function logout() {
+    // Confirm logout
+    const confirmed = confirm('Are you sure you want to logout?');
+
+    if (!confirmed) {
+        console.log('Logout cancelled by user');
+        return;
+    }
+
+    // Clear current role and job state
+    AppState.currentRole = null;
+    AppState.currentJobId = null;
+
+    // Clear any uploaded files
+    if (typeof uploadedFiles !== 'undefined') {
+        uploadedFiles = [];
+    }
+
+    // Navigate back to role selection
+    showScreen('roleSelectionScreen');
+
+    console.log('User logged out successfully');
+}
+
 // === PARTNER LOGIN ===
 function partnerLogin(event) {
     event.preventDefault();
@@ -464,12 +489,28 @@ function updatePartnerStats() {
     // Load jobs from storage to ensure accuracy
     const allJobs = loadJobsFromStorage();
 
-    const pending = allJobs.filter(j => j.status === 'pending' || j.status === 'pending_approval').length;
-    const completed = allJobs.filter(j => j.status === 'completed').length;
+    // Get current logged-in partner
+    const currentPartnerJson = sessionStorage.getItem('currentPartner');
+    const currentPartner = currentPartnerJson ? JSON.parse(currentPartnerJson) : null;
 
+    if (!currentPartner) {
+        console.warn('No partner logged in, cannot update stats');
+        return;
+    }
+
+    // Filter jobs for current partner
+    const partnerJobs = allJobs.filter(j => j.partner === currentPartner.name);
+
+    // Calculate stats based on partner's jobs only
+    const active = partnerJobs.filter(j => j.status === 'assigned' || j.status === 'progress').length;
+    const pending = partnerJobs.filter(j => j.status === 'pending_approval').length;
+    const completed = partnerJobs.filter(j => j.status === 'completed').length;
+
+    const activeEl = document.getElementById('partnerActiveCount');
     const pendingEl = document.getElementById('partnerPendingCount');
     const completedEl = document.getElementById('partnerCompletedCount');
 
+    if (activeEl) activeEl.textContent = active;
     if (pendingEl) pendingEl.textContent = pending;
     if (completedEl) completedEl.textContent = completed;
 }
@@ -824,6 +865,50 @@ function rejectJob(jobId) {
     }
 }
 
+// === DELETE JOB ===
+function deleteJob(jobId) {
+    console.log('Delete job called with ID:', jobId);
+
+    // Show confirmation dialog
+    const confirmed = confirm(`Are you sure you want to delete Job #JOB-2024-00${jobId}?\n\nThis action cannot be undone.`);
+
+    if (!confirmed) {
+        console.log('Job deletion cancelled by user');
+        return;
+    }
+
+    // Load jobs from storage
+    const allJobs = loadJobsFromStorage();
+
+    // Find job index by ID (handle both string and number IDs)
+    const jobIndex = allJobs.findIndex(j => j.id == jobId || j.id === jobId);
+
+    if (jobIndex !== -1) {
+        const deletedJob = allJobs[jobIndex];
+        console.log('Job found, deleting:', deletedJob);
+
+        // Remove job from array
+        allJobs.splice(jobIndex, 1);
+
+        // Update AppState
+        AppState.jobs = allJobs;
+
+        // Save to Storage
+        saveJobsToStorage(allJobs);
+
+        // Reload jobs table and update stats
+        loadJobsTable();
+        updateAdminStats();
+        updatePartnerStats();
+
+        showNotification(`Job #JOB-2024-00${jobId} deleted successfully!`, 'success');
+    } else {
+        console.error('Job not found with ID:', jobId);
+        showNotification('Job not found', 'error');
+    }
+}
+
+
 // === ADMIN SECTION NAVIGATION ===
 function showAdminSection(sectionName, event) {
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -1029,7 +1114,24 @@ function loadJobsTable(filter = 'all') {
             <td>${job.partner}</td>
             <td><span class="job-status-badge ${statusClass}">${statusText}</span></td>
             <td>${job.payment}</td>
-            <td><button class="btn-view-job" onclick="event.stopPropagation(); openJobDetail(${job.id})">View</button></td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-view-job" onclick="event.stopPropagation(); openJobDetail(${job.id})" title="View Details">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                    <button class="btn-delete-job" onclick="event.stopPropagation(); deleteJob(${job.id})" title="Delete Job">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
+                </div>
+            </td>
         `;
 
         tbody.appendChild(row);
