@@ -253,6 +253,13 @@
                 </svg>
                 <span>Earnings</span>
             </button>
+            <button class="nav-item" onclick="showPartnerProfile()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Profile</span>
+            </button>
             <button class="nav-item" onclick="logout()">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -300,6 +307,97 @@
                     <button class="btn-cancel" onclick="closeImageUpload()">Cancel</button>
                     <button class="btn-submit" id="submitJobBtn" onclick="submitJobCompletion()" disabled>Submit for
                         Approval</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partner Profile Modal -->
+    <div class="modal-overlay" id="partnerProfileModal" onclick="closePartnerProfile(event)">
+        <div class="modal-content profile-modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>My Profile</h2>
+                <button class="modal-close" onclick="closePartnerProfile()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Profile Information -->
+                <div class="profile-section">
+                    <h3>Profile Information</h3>
+                    <div class="profile-info-grid">
+                        <div class="profile-info-item">
+                            <label>Name</label>
+                            <p id="partnerProfileName">-</p>
+                        </div>
+                        <div class="profile-info-item">
+                            <label>Email</label>
+                            <p id="partnerProfileEmail">-</p>
+                        </div>
+                        <div class="profile-info-item">
+                            <label>NVQ Number</label>
+                            <p id="partnerProfileNVQ">-</p>
+                        </div>
+                        <div class="profile-info-item">
+                            <label>Region</label>
+                            <p id="partnerProfileRegion">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password Section -->
+                <div class="profile-section">
+                    <h3>Change Password</h3>
+                    <p class="section-description">Update your password using email verification</p>
+
+                    <form id="partnerPasswordChangeForm" onsubmit="return requestPartnerPasswordOTP(event)">
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" id="partnerNewPassword" placeholder="Enter new password" required
+                                minlength="6">
+                            <small>Minimum 6 characters</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" id="partnerConfirmPassword" placeholder="Confirm new password"
+                                required minlength="6">
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="btnRequestPartnerOTP">
+                            Send OTP to Email
+                        </button>
+                    </form>
+
+                    <!-- OTP Verification (Hidden initially) -->
+                    <div id="partnerOTPSection" style="display: none;">
+                        <div class="otp-info">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                </path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            <p>OTP sent to <strong id="partnerOTPEmail">-</strong></p>
+                            <p class="otp-code">Your OTP: <strong id="partnerOTPCode">-</strong></p>
+                        </div>
+
+                        <form id="partnerVerifyOTPForm" onsubmit="return verifyPartnerPasswordOTP(event)">
+                            <div class="form-group">
+                                <label>Enter OTP</label>
+                                <input type="text" id="partnerOTPInput" placeholder="Enter 6-digit OTP" required
+                                    pattern="[0-9]{6}" maxlength="6">
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-cancel" onclick="cancelPartnerOTP()">Cancel</button>
+                                <button type="submit" class="btn-submit">Verify & Change Password</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -372,11 +470,22 @@
         <div class="main-content">
             <!-- Header -->
             <div class="content-header">
-                <div>
-                    <h1 id="adminSectionTitle">Dashboard Overview</h1>
-                    <p id="adminSectionSubtitle">Monitor and manage all tech-lead partner activities</p>
+                <div class="header-title-group">
+                    <button class="btn-menu" onclick="toggleAdminSidebar()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 id="adminSectionTitle">Dashboard Overview</h1>
+                        <p id="adminSectionSubtitle">Monitor and manage all tech-lead partner activities</p>
+                    </div>
                 </div>
             </div>
+
+            <div class="sidebar-overlay" onclick="toggleAdminSidebar()"></div>
 
             <!-- Overview Section -->
             <div class="content-section active" id="adminOverviewSection">

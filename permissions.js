@@ -133,15 +133,19 @@ const ROLE_PERMISSIONS = {
 
     [ROLES.REGIONAL_MANAGER]: [
         // Regional oversight - Read + Oversight
+        PERMISSIONS.USER_MANAGEMENT,    // Can access User Management section
+        PERMISSIONS.CREATE_USERS,       // Can create Business Support and Tech Leads
         PERMISSIONS.CREATE_JOBS, // Optional
         PERMISSIONS.VIEW_REGIONAL_JOBS,
         PERMISSIONS.VIEW_REGIONAL_REPORTS,
         PERMISSIONS.VIEW_DOCUMENTS
-        // Cannot: change system settings, user management, assign jobs, approve jobs
+        // Cannot: change system settings, assign jobs, approve jobs
     ],
 
     [ROLES.BUSINESS_SUPPORT]: [
         // Operational control
+        PERMISSIONS.USER_MANAGEMENT,    // Can access User Management section
+        PERMISSIONS.CREATE_USERS,       // Can create Tech Lead Partners
         PERMISSIONS.CREATE_JOBS,
         PERMISSIONS.ASSIGN_JOBS,
         PERMISSIONS.APPROVE_JOBS,
@@ -149,7 +153,7 @@ const ROLE_PERMISSIONS = {
         PERMISSIONS.VIEW_PAYMENTS,
         PERMISSIONS.VIEW_REGIONAL_REPORTS,
         PERMISSIONS.VIEW_DOCUMENTS
-        // Cannot: user management, system settings, API logs
+        // Cannot: system settings, API logs
     ],
 
     [ROLES.TECH_LEAD_PARTNER]: [
@@ -306,21 +310,25 @@ function filterJobsByRole(jobs, user) {
 // Defines which roles each user type can create
 const CREATABLE_ROLES = {
     [ROLES.SUPER_ADMIN]: [
-        ROLES.DEVELOPER,
+        ROLES.SUPER_ADMIN,          // Super Admin can create other Super Admins
+        ROLES.DEVELOPER,            // Super Admin can create Developers
         ROLES.REGIONAL_MANAGER,
         ROLES.BUSINESS_SUPPORT,
         ROLES.TECH_LEAD_PARTNER
     ],
     [ROLES.DEVELOPER]: [
+        // Developer CANNOT create Super Admin or Developer
         ROLES.REGIONAL_MANAGER,
         ROLES.BUSINESS_SUPPORT,
         ROLES.TECH_LEAD_PARTNER
     ],
     [ROLES.REGIONAL_MANAGER]: [
+        // Regional Manager CANNOT create Super Admin, Developer, or Regional Manager
         ROLES.BUSINESS_SUPPORT,
         ROLES.TECH_LEAD_PARTNER
     ],
     [ROLES.BUSINESS_SUPPORT]: [
+        // Business Support CANNOT create Super Admin, Developer, Regional Manager, or Business Support
         ROLES.TECH_LEAD_PARTNER
     ],
     [ROLES.TECH_LEAD_PARTNER]: []
@@ -350,23 +358,26 @@ function canCreateRole(userRole, targetRole) {
 // Defines which user roles each role can view in User Management
 const VISIBLE_ROLES = {
     [ROLES.SUPER_ADMIN]: [
-        ROLES.SUPER_ADMIN,      // Can see themselves
+        ROLES.SUPER_ADMIN,      // Can see all users including themselves
         ROLES.DEVELOPER,
         ROLES.REGIONAL_MANAGER,
         ROLES.BUSINESS_SUPPORT,
         ROLES.TECH_LEAD_PARTNER
     ],
     [ROLES.DEVELOPER]: [
-        ROLES.REGIONAL_MANAGER,
-        ROLES.BUSINESS_SUPPORT,
-        ROLES.TECH_LEAD_PARTNER
+        ROLES.DEVELOPER,            // Can see their own profile only (filtered by ID)
+        ROLES.TECH_LEAD_PARTNER,    // Can see Tech Leads
+        ROLES.REGIONAL_MANAGER,     // Can see Regional Managers
+        ROLES.BUSINESS_SUPPORT      // Can see Business Support Team
     ],
     [ROLES.REGIONAL_MANAGER]: [
-        ROLES.BUSINESS_SUPPORT,
-        ROLES.TECH_LEAD_PARTNER
+        ROLES.REGIONAL_MANAGER,     // Can see their own profile only (filtered by ID)
+        ROLES.TECH_LEAD_PARTNER,    // Can see Tech Leads
+        ROLES.BUSINESS_SUPPORT      // Can see Business Support Team
     ],
     [ROLES.BUSINESS_SUPPORT]: [
-        ROLES.TECH_LEAD_PARTNER
+        ROLES.BUSINESS_SUPPORT,     // Can see their own profile only (filtered by ID)
+        ROLES.TECH_LEAD_PARTNER     // Can see Tech Leads only
     ],
     [ROLES.TECH_LEAD_PARTNER]: []
 };

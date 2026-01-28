@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Test Helper - Role Visibility</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1F2937;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #6B7280;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #F9FAFB;
+            border-left: 4px solid #3B82F6;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #1F2937;
+        }
+        .credentials {
+            background: #EFF6FF;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .credentials strong {
+            color: #1E40AF;
+        }
+        .btn {
+            display: inline-block;
+            background: #3B82F6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin: 10px 10px 10px 0;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #2563EB;
+        }
+        .btn-secondary {
+            background: #6B7280;
+        }
+        .btn-secondary:hover {
+            background: #4B5563;
+        }
+        code {
+            background: #F3F4F6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #DC2626;
+        }
+        .expected {
+            background: #D1FAE5;
+            border-left: 4px solid #10B981;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .expected h4 {
+            margin-top: 0;
+            color: #065F46;
+        }
+        .expected ul {
+            margin: 5px 0;
+        }
+        .note {
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Role-Based Visibility Test Helper</h1>
+        <p class="subtitle">Follow these steps to test user visibility for each role</p>
+
+        <div class="step">
+            <h3>Step 1: Open Admin Dashboard</h3>
+            <p>Click the button below to open the admin dashboard in a new tab:</p>
+            <a href="admin-dashboard.html" target="_blank" class="btn">Open Admin Dashboard</a>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Test Each Role</h3>
+            <p>Login with each role and check the User Management section. Use these credentials:</p>
+            
+            <h4>🔴 Admin (Super Admin)</h4>
+            <div class="credentials">
+                <strong>Username:</strong> admin<br>
+                <strong>Password:</strong> admin123<br>
+                <strong>Role:</strong> Super Admin
+            </div>
+            <div class="expected">
+                <h4>✅ Expected to see:</h4>
+                <ul>
+                    <li>All users (Admin, Developer, Regional Manager, Business Support, Tech Lead)</li>
+                    <li>Can edit/delete all users except themselves</li>
+                </ul>
+            </div>
+
+            <h4>🔵 Developer</h4>
+            <div class="credentials">
+                <strong>Username:</strong> dev1<br>
+                <strong>Password:</strong> dev123<br>
+                <strong>Role:</strong> Developer
+            </div>
+            <div class="expected">
+                <h4>✅ Expected to see:</h4>
+                <ul>
+                    <li>Tech Lead Partners</li>
+                    <li>Regional Managers</li>
+                    <li>Business Support Team</li>
+                    <li>Can edit/delete all visible users</li>
+                </ul>
+            </div>
+
+            <h4>🟢 Regional Manager</h4>
+            <div class="credentials">
+                <strong>Username:</strong> rm1<br>
+                <strong>Password:</strong> rm123<br>
+                <strong>Role:</strong> Regional Manager
+            </div>
+            <div class="expected">
+                <h4>✅ Expected to see:</h4>
+                <ul>
+                    <li>Tech Lead Partners</li>
+                    <li>Business Support Team</li>
+                    <li>Can edit/delete all visible users</li>
+                </ul>
+            </div>
+
+            <h4>🟡 Business Support Team</h4>
+            <div class="credentials">
+                <strong>Username:</strong> bs1<br>
+                <strong>Password:</strong> bs123<br>
+                <strong>Role:</strong> Business Support Team
+            </div>
+            <div class="expected">
+                <h4>✅ Expected to see:</h4>
+                <ul>
+                    <li>Tech Lead Partners ONLY</li>
+                    <li>Can edit/delete all visible users</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>📝 Note:</strong> If test users don't exist, login as Admin first and create them in the User Management section. Make sure to create at least one user of each type (Developer, Regional Manager, Business Support, Tech Lead).
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Run Console Test Script</h3>
+            <p>After logging in with each role:</p>
+            <ol>
+                <li>Press <code>F12</code> to open Chrome DevTools</li>
+                <li>Go to the <strong>Console</strong> tab</li>
+                <li>Copy and paste the test script from <code>test-role-visibility.js</code></li>
+                <li>Press Enter to run it</li>
+                <li>Check if the output shows "✅ PASS"</li>
+            </ol>
+            <p>The script will automatically verify if the visibility rules are correct for the logged-in role.</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Manual Verification</h3>
+            <p>In the User Management section:</p>
+            <ol>
+                <li>Count how many users are visible</li>
+                <li>Click "View Profile" on each user</li>
+                <li>Check if Edit and Delete buttons appear (should appear for all except yourself)</li>
+                <li>Verify the visible users match the expected list above</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

@@ -1453,3 +1453,222 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Unified SLT Tech-Lead Platform initialized');
     document.documentElement.style.scrollBehavior = 'smooth';
 });
+
+// === PARTNER PROFILE MANAGEMENT ===
+let partnerOTPData = null;
+
+/**
+ * Show partner profile modal
+ */
+function showPartnerProfile() {
+    const modal = document.getElementById('partnerProfileModal');
+    if (!modal) {
+        console.error('Partner profile modal not found');
+        return;
+    }
+
+    // Get current logged-in partner
+    const currentPartnerJson = sessionStorage.getItem('currentPartner');
+    const currentPartner = currentPartnerJson ? JSON.parse(currentPartnerJson) : null;
+
+    if (!currentPartner) {
+        showNotification('Please login to view profile', 'error');
+        return;
+    }
+
+    // Populate profile information
+    document.getElementById('partnerProfileName').textContent = currentPartner.name || '-';
+    document.getElementById('partnerProfileEmail').textContent = currentPartner.email || '-';
+    document.getElementById('partnerProfileNVQ').textContent = currentPartner.nvq || currentPartner.username || '-';
+    document.getElementById('partnerProfileRegion').textContent = currentPartner.region || '-';
+
+    // Reset password change form
+    document.getElementById('partnerPasswordChangeForm').reset();
+    document.getElementById('partnerOTPSection').style.display = 'none';
+
+    // Show modal
+    modal.classList.add('active');
+}
+
+/**
+ * Close partner profile modal
+ */
+function closePartnerProfile(event) {
+    const modal = document.getElementById('partnerProfileModal');
+    if (!event || event.target === modal || event.target.closest('.modal-close')) {
+        modal.classList.remove('active');
+        partnerOTPData = null;
+        document.getElementById('partnerPasswordChangeForm').reset();
+        document.getElementById('partnerOTPSection').style.display = 'none';
+    }
+}
+
+/**
+ * Request OTP for password change
+ */
+function requestPartnerPasswordOTP(event) {
+    event.preventDefault();
+
+    const newPassword = document.getElementById('partnerNewPassword').value;
+    const confirmPassword = document.getElementById('partnerConfirmPassword').value;
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+        showNotification('Passwords do not match!', 'error');
+        return false;
+    }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+        showNotification('Password must be at least 6 characters', 'error');
+        return false;
+    }
+
+    // Get current partner
+    const currentPartnerJson = sessionStorage.getItem('currentPartner');
+    const currentPartner = currentPartnerJson ? JSON.parse(currentPartnerJson) : null;
+
+    if (!currentPartner) {
+        showNotification('Please login to change password', 'error');
+        return false;
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP data
+    partnerOTPData = {
+        otp: otp,
+        newPassword: newPassword,
+        email: currentPartner.email,
+        timestamp: Date.now()
+    };
+
+    // Try to send OTP via backend API
+    sendPartnerOTPEmail(currentPartner.email, otp)
+        .then(() => {
+            // Show OTP section
+            document.getElementById('partnerOTPEmail').textContent = currentPartner.email;
+            document.getElementById('partnerOTPCode').textContent = otp;
+            document.getElementById('partnerPasswordChangeForm').style.display = 'none';
+            document.getElementById('partnerOTPSection').style.display = 'block';
+
+            showNotification('OTP sent to your email!', 'success');
+        })
+        .catch(error => {
+            console.error('Failed to send OTP email:', error);
+            // Still show OTP section even if email fails (fallback)
+            document.getElementById('partnerOTPEmail').textContent = currentPartner.email;
+            document.getElementById('partnerOTPCode').textContent = otp;
+            document.getElementById('partnerPasswordChangeForm').style.display = 'none';
+            document.getElementById('partnerOTPSection').style.display = 'block';
+
+            showNotification('OTP generated (email service unavailable)', 'info');
+        });
+
+    return false;
+}
+
+/**
+ * Send OTP email via backend API
+ */
+async function sendPartnerOTPEmail(email, otp) {
+    try {
+        const response = await fetch('http://localhost:3000/api/send-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: email,
+                otp: otp,
+                type: 'password_change'
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send OTP email');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error sending OTP email:', error);
+        throw error;
+    }
+}
+
+/**
+ * Verify OTP and change password
+ */
+function verifyPartnerPasswordOTP(event) {
+    event.preventDefault();
+
+    const enteredOTP = document.getElementById('partnerOTPInput').value;
+
+    if (!partnerOTPData) {
+        showNotification('Please request OTP first', 'error');
+        return false;
+    }
+
+    // Check if OTP is expired (10 minutes)
+    const otpAge = Date.now() - partnerOTPData.timestamp;
+    if (otpAge > 10 * 60 * 1000) {
+        showNotification('OTP expired. Please request a new one', 'error');
+        cancelPartnerOTP();
+        return false;
+    }
+
+    // Verify OTP
+    if (enteredOTP !== partnerOTPData.otp) {
+        showNotification('Invalid OTP. Please try again', 'error');
+        return false;
+    }
+
+    // OTP verified, update password
+    const currentPartnerJson = sessionStorage.getItem('currentPartner');
+    const currentPartner = currentPartnerJson ? JSON.parse(currentPartnerJson) : null;
+
+    if (!currentPartner) {
+        showNotification('Session expired. Please login again', 'error');
+        return false;
+    }
+
+    // Load all users
+    const usersJson = localStorage.getItem('platformUsers');
+    const allUsers = usersJson ? JSON.parse(usersJson) : [];
+
+    // Find and update user password
+    const userIndex = allUsers.findIndex(u => u.id === currentPartner.id);
+    if (userIndex !== -1) {
+        allUsers[userIndex].password = partnerOTPData.newPassword;
+
+        // Save to localStorage
+        localStorage.setItem('platformUsers', JSON.stringify(allUsers));
+
+        // Update session
+        currentPartner.password = partnerOTPData.newPassword;
+        sessionStorage.setItem('currentPartner', JSON.stringify(currentPartner));
+
+        // Close modal and reset
+        closePartnerProfile();
+        showNotification('Password changed successfully!', 'success');
+
+        // Clear OTP data
+        partnerOTPData = null;
+    } else {
+        showNotification('User not found', 'error');
+    }
+
+    return false;
+}
+
+/**
+ * Cancel OTP verification
+ */
+function cancelPartnerOTP() {
+    partnerOTPData = null;
+    document.getElementById('partnerPasswordChangeForm').style.display = 'block';
+    document.getElementById('partnerPasswordChangeForm').reset();
+    document.getElementById('partnerOTPSection').style.display = 'none';
+    document.getElementById('partnerOTPInput').value = '';
+}

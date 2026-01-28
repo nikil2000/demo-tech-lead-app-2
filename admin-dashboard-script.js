@@ -52,8 +52,23 @@ function showSection(sectionId) {
 
     // Show/hide Create New Job button based on section
     const createJobBtn = document.getElementById('createJobBtn');
+    const createJobBtnMobile = document.getElementById('createJobBtnMobile');
+
     if (createJobBtn) {
         createJobBtn.style.display = (sectionId === 'jobs') ? 'block' : 'none';
+    }
+
+    // Manage mobile button visibility via class/style, letting CSS media queries handle the responsive part
+    // But we still need to toggle it based on section
+    if (createJobBtnMobile) {
+        if (sectionId === 'jobs') {
+            createJobBtnMobile.classList.add('active-section-btn');
+            // We use a specific class or just inline style if simple
+            createJobBtnMobile.style.display = 'flex';
+        } else {
+            createJobBtnMobile.classList.remove('active-section-btn');
+            createJobBtnMobile.style.display = 'none';
+        }
     }
 
     // Load jobs when Jobs section is shown
@@ -297,8 +312,14 @@ function adminLogin(event) {
 
         // Hide Create New Job button initially (Overview section is default)
         const createJobBtn = document.getElementById('createJobBtn');
+        const createJobBtnMobile = document.getElementById('createJobBtnMobile');
+
         if (createJobBtn) {
             createJobBtn.style.display = 'none';
+        }
+
+        if (createJobBtnMobile) {
+            createJobBtnMobile.style.display = 'none';
         }
 
         // Update statistics after dashboard is shown
@@ -315,8 +336,32 @@ function adminLogin(event) {
     return false;
 }
 
-// === SECTION NAVIGATION ===
-function showSection(sectionName) {
+// === MOBILE RESPONSIVE SIDEBAR ===
+function toggleAdminSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+
+    if (overlay) {
+        overlay.classList.toggle('active');
+    }
+}
+
+function closeAdminSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+}
+
+// Override showSection to close sidebar on mobile
+const originalShowSection = showSection;
+showSection = function (sectionName) {
+    // Call original function logic - copied here because we are overriding
     // Update nav links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
@@ -397,19 +442,28 @@ function showSection(sectionName) {
     };
 
     const titleInfo = titles[sectionName];
-    document.getElementById('sectionTitle').textContent = titleInfo.title;
-    document.getElementById('sectionSubtitle').textContent = titleInfo.subtitle;
-
-    // Show/hide Create New Job button - only visible in Jobs section
-    const createJobBtn = document.getElementById('createJobBtn');
-    if (createJobBtn) {
-        if (sectionName === 'jobs') {
-            createJobBtn.style.display = 'flex';
-        } else {
-            createJobBtn.style.display = 'none';
-        }
+    if (titleInfo && document.getElementById('sectionTitle')) {
+        document.getElementById('sectionTitle').textContent = titleInfo.title;
+        document.getElementById('sectionSubtitle').textContent = titleInfo.subtitle;
     }
-}
+
+    // Show/hide Create New Job button
+    const createJobBtn = document.getElementById('createJobBtn');
+    const createJobBtnMobile = document.getElementById('createJobBtnMobile');
+
+    if (sectionName === 'jobs') {
+        if (createJobBtn) createJobBtn.style.display = 'flex';
+        if (createJobBtnMobile) createJobBtnMobile.style.display = 'flex';
+    } else {
+        if (createJobBtn) createJobBtn.style.display = 'none';
+        if (createJobBtnMobile) createJobBtnMobile.style.display = 'none';
+    }
+
+    // CLOSE SIDEBAR ON MOBILE
+    if (window.innerWidth <= 1024) {
+        closeAdminSidebar();
+    }
+};
 
 // === APPROVAL LOGIC ===
 function displayPendingApprovals() {
@@ -1253,7 +1307,7 @@ function handleMyProfileUpdate(event) {
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
 
-    let passwordChanged = false;
+    let passwordChangeRequested = false;
     let photoChanged = false;
 
     // Check if password change is requested
@@ -1287,46 +1341,55 @@ function handleMyProfileUpdate(event) {
             return false;
         }
 
-        // Update password
-        user.password = newPassword;
-        user.lastPasswordChange = new Date().toISOString();
-        passwordChanged = true;
+        passwordChangeRequested = true;
     }
 
     // Check if photo changed
     if (currentProfilePhoto !== user.profilePhoto) {
-        user.profilePhoto = currentProfilePhoto;
         photoChanged = true;
     }
 
-    // Save updated user
-    updateUserInStorage(user);
-    setCurrentUser(user);
+    // If password change is requested, trigger OTP verification
+    if (passwordChangeRequested) {
+        // Store the new password temporarily for later use after OTP verification
+        window.pendingPasswordChange = {
+            newPassword: newPassword,
+            photoChanged: photoChanged,
+            newPhoto: currentProfilePhoto
+        };
 
-    // Update sidebar avatar if photo changed
-    if (photoChanged) {
-        updateSidebarAvatar(user.profilePhoto);
+        // Generate and send OTP
+        sendOTPEmail(user.email);
+        return false;
     }
 
-    // Log the changes
-    const changes = [];
-    if (passwordChanged) changes.push('password');
-    if (photoChanged) changes.push('profile photo');
+    // If only photo changed (no password change), update immediately
+    if (photoChanged) {
+        user.profilePhoto = currentProfilePhoto;
+        updateUserInStorage(user);
+        setCurrentUser(user);
+        updateSidebarAvatar(user.profilePhoto);
+        logProfileUpdate('profile photo');
+        showNotification('Profile photo updated successfully!', 'success');
 
-    if (changes.length > 0) {
-        logProfileUpdate(changes.join(' and '));
-        showNotification(`Profile updated successfully! Changed: ${changes.join(' and ')}`, 'success');
+        setTimeout(() => {
+            closeMyProfileModal();
+            showMyProfile();
+        }, 1500);
     } else {
         showNotification('No changes made to profile', 'info');
     }
 
-    // Switch back to view mode and refresh
-    setTimeout(() => {
-        closeMyProfileModal();
-        showMyProfile();
-    }, 1500);
-
     return false;
+}
+
+
+/**
+ * Stub function for activity logging
+ * TODO: Implement proper activity logging system
+ */
+function logActivity(data) {
+    console.log('Activity Log:', data);
 }
 
 /**
@@ -1338,7 +1401,7 @@ function updateUserInStorage(updatedUser) {
 
     if (index !== -1) {
         users[index] = updatedUser;
-        localStorage.setItem('slt_users', JSON.stringify(users));
+        localStorage.setItem('platformUsers', JSON.stringify(users));
     }
 }
 
@@ -1379,6 +1442,388 @@ function logProfileUpdate(changes) {
         },
         message: `${user.name} updated their profile: ${changes}`
     });
+}
+
+// === OTP VERIFICATION FOR PASSWORD CHANGE ===
+
+let otpData = {
+    code: null,
+    expiresAt: null,
+    email: null
+};
+
+let otpTimerInterval = null;
+
+/**
+ * Generate a random 6-digit OTP
+ */
+function generateOTP() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Simulate sending OTP via email
+ * In production, this would call a backend API to send actual email
+ */
+async function sendOTPEmail(email) {
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = Date.now() + (5 * 60 * 1000); // 5 minutes from now
+
+    // Store OTP data
+    otpData = {
+        code: otp,
+        expiresAt: expiresAt,
+        email: email
+    };
+
+    // Try to send real email via backend
+    try {
+        const response = await fetch('http://localhost:3000/api/send-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: email,
+                otp: otp
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log('✅ Real email sent successfully via backend');
+            console.log('📧 Email sent to:', email);
+
+            // Show OTP modal WITHOUT displaying the code (user will get it via email)
+            showOTPModal(email, null); // Pass null to hide demo display
+
+            showNotification('OTP sent to your email. Please check your inbox.', 'success');
+        } else {
+            throw new Error(data.message || 'Failed to send email');
+        }
+
+    } catch (error) {
+        console.warn('⚠️ Backend not available, falling back to demo mode');
+        console.log('Error:', error.message);
+
+        // Fallback to demo mode
+        console.log('=== OTP EMAIL SIMULATION (DEMO MODE) ===');
+        console.log('To:', email);
+        console.log('Subject: Password Change Verification Code');
+        console.log('OTP Code:', otp);
+        console.log('Valid for: 5 minutes');
+        console.log('========================================');
+
+        // Show OTP modal WITH the code displayed (demo mode)
+        showOTPModal(email, otp);
+
+        showNotification('Backend offline - Using demo mode. OTP displayed in modal.', 'info');
+    }
+
+    // Log the OTP request
+    logActivity({
+        action: 'OTP_REQUESTED',
+        userId: getCurrentUser().id,
+        userName: getCurrentUser().name,
+        details: {
+            email: email,
+            timestamp: new Date().toISOString()
+        },
+        message: `OTP requested for password change`
+    });
+}
+
+/**
+ * Show OTP verification modal
+ * @param {string} email - User's email address
+ * @param {string|null} otpCode - OTP code (null if using real email backend)
+ */
+function showOTPModal(email, otpCode) {
+    // Display email
+    document.getElementById('otpEmailDisplay').textContent = email;
+
+    // Show/hide demo display based on whether we have an OTP code
+    const demoNotice = document.querySelector('.demo-notice');
+    const demoOtpDisplay = document.getElementById('demoOtpDisplay');
+    const otpDisplayElement = document.getElementById('displayedOtpCode');
+
+    if (otpCode) {
+        // Demo mode - show the OTP code
+        if (demoNotice) demoNotice.style.display = 'block';
+        if (demoOtpDisplay) demoOtpDisplay.style.display = 'block';
+        if (otpDisplayElement) otpDisplayElement.textContent = otpCode;
+    } else {
+        // Real email mode - hide the demo display
+        if (demoNotice) demoNotice.style.display = 'none';
+        if (demoOtpDisplay) demoOtpDisplay.style.display = 'none';
+    }
+
+    // Clear OTP input
+    document.getElementById('otpInput').value = '';
+
+    // Start timer
+    startOTPTimer();
+
+    // Show modal
+    const modal = document.getElementById('otpVerificationModal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+
+    // Focus on OTP input
+    setTimeout(() => {
+        document.getElementById('otpInput').focus();
+    }, 300);
+}
+
+/**
+ * Close OTP modal
+ */
+function closeOTPModal() {
+    const modal = document.getElementById('otpVerificationModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    // Clear timer
+    if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+        otpTimerInterval = null;
+    }
+
+    // Clear OTP data
+    otpData = {
+        code: null,
+        expiresAt: null,
+        email: null
+    };
+
+    // Note: Do NOT clear pendingPasswordChange here
+    // It's needed by completePasswordChange which is called after a delay
+}
+
+/**
+ * Start OTP countdown timer
+ */
+function startOTPTimer() {
+    // Clear existing timer
+    if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+    }
+
+    const timerElement = document.getElementById('otpTimer');
+
+    otpTimerInterval = setInterval(() => {
+        const now = Date.now();
+        const timeLeft = otpData.expiresAt - now;
+
+        if (timeLeft <= 0) {
+            // OTP expired
+            clearInterval(otpTimerInterval);
+            timerElement.textContent = '0:00';
+            timerElement.style.color = '#EF4444'; // Red color
+            showNotification('OTP has expired. Please request a new one.', 'error');
+            return;
+        }
+
+        // Calculate minutes and seconds
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+
+        // Format time
+        const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timerElement.textContent = formattedTime;
+
+        // Change color when less than 1 minute remaining
+        if (timeLeft < 60000) {
+            timerElement.style.color = '#F59E0B'; // Orange color
+        } else {
+            timerElement.style.color = '#3B82F6'; // Blue color
+        }
+    }, 1000);
+}
+
+/**
+ * Verify entered OTP
+ */
+function verifyOTP() {
+    const enteredOTP = document.getElementById('otpInput').value.trim();
+
+    // Validate OTP format
+    if (!enteredOTP || enteredOTP.length !== 6) {
+        showNotification('Please enter a valid 6-digit OTP', 'error');
+        return;
+    }
+
+    // Check if OTP has expired
+    if (Date.now() > otpData.expiresAt) {
+        showNotification('OTP has expired. Please request a new one.', 'error');
+        return;
+    }
+
+    // Verify OTP
+    if (enteredOTP === otpData.code) {
+        // OTP is correct
+        showNotification('OTP verified successfully!', 'success');
+
+        // Log successful verification
+        logActivity({
+            action: 'OTP_VERIFIED',
+            userId: getCurrentUser().id,
+            userName: getCurrentUser().name,
+            details: {
+                email: otpData.email,
+                timestamp: new Date().toISOString()
+            },
+            message: `OTP verified successfully for password change`
+        });
+
+        // Close OTP modal
+        closeOTPModal();
+
+        // Complete password change
+        setTimeout(() => {
+            completePasswordChange();
+        }, 500);
+    } else {
+        // OTP is incorrect
+        showNotification('Incorrect OTP. Please try again.', 'error');
+
+        // Log failed verification
+        logActivity({
+            action: 'OTP_FAILED',
+            userId: getCurrentUser().id,
+            userName: getCurrentUser().name,
+            details: {
+                email: otpData.email,
+                timestamp: new Date().toISOString()
+            },
+            message: `Failed OTP verification attempt`
+        });
+
+        // Clear input
+        document.getElementById('otpInput').value = '';
+        document.getElementById('otpInput').focus();
+    }
+}
+
+/**
+ * Resend OTP
+ */
+async function resendOTP() {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const expiresAt = Date.now() + (5 * 60 * 1000);
+
+    // Update OTP data
+    otpData = {
+        code: otp,
+        expiresAt: expiresAt,
+        email: user.email
+    };
+
+    // Try to send real email via backend
+    try {
+        const response = await fetch('http://localhost:3000/api/send-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: user.email,
+                otp: otp
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log('✅ New OTP sent via email');
+
+            // Hide demo display since using real email
+            const demoNotice = document.querySelector('.demo-notice');
+            const demoOtpDisplay = document.getElementById('demoOtpDisplay');
+            if (demoNotice) demoNotice.style.display = 'none';
+            if (demoOtpDisplay) demoOtpDisplay.style.display = 'none';
+
+            showNotification('New OTP sent to your email', 'success');
+        } else {
+            throw new Error(data.message || 'Failed to send email');
+        }
+
+    } catch (error) {
+        console.warn('⚠️ Backend not available, using demo mode');
+
+        // Fallback to demo mode - display OTP in modal
+        const otpDisplayElement = document.getElementById('displayedOtpCode');
+        const demoNotice = document.querySelector('.demo-notice');
+        const demoOtpDisplay = document.getElementById('demoOtpDisplay');
+
+        if (demoNotice) demoNotice.style.display = 'block';
+        if (demoOtpDisplay) demoOtpDisplay.style.display = 'block';
+        if (otpDisplayElement) otpDisplayElement.textContent = otp;
+
+        console.log('=== OTP RESENT (DEMO MODE) ===');
+        console.log('New OTP Code:', otp);
+        console.log('==============================');
+
+        showNotification('Backend offline - New OTP displayed above', 'info');
+    }
+
+    // Restart timer
+    startOTPTimer();
+}
+
+/**
+ * Complete password change after OTP verification
+ */
+function completePasswordChange() {
+    const user = getCurrentUser();
+    if (!user || !window.pendingPasswordChange) {
+        showNotification('Error: No pending password change', 'error');
+        return;
+    }
+
+    const { newPassword, photoChanged, newPhoto } = window.pendingPasswordChange;
+
+    // Update password
+    user.password = newPassword;
+    user.lastPasswordChange = new Date().toISOString();
+
+    // Update photo if changed
+    if (photoChanged) {
+        user.profilePhoto = newPhoto;
+    }
+
+    // Save updated user
+    updateUserInStorage(user);
+    setCurrentUser(user);
+
+    // Update sidebar avatar if photo changed
+    if (photoChanged) {
+        updateSidebarAvatar(user.profilePhoto);
+    }
+
+    // Log the changes
+    const changes = ['password'];
+    if (photoChanged) changes.push('profile photo');
+
+    logProfileUpdate(changes.join(' and '));
+    showNotification(`Password changed successfully!${photoChanged ? ' Profile photo also updated.' : ''}`, 'success');
+
+    // Clear pending change
+    window.pendingPasswordChange = null;
+
+    // Close profile modal and refresh
+    setTimeout(() => {
+        closeMyProfileModal();
+        showMyProfile();
+    }, 1500);
 }
 
 // === NOTIFICATIONS ===
@@ -1857,8 +2302,28 @@ function getUserById(userId) {
 function getVisibleUsers(currentUserRole) {
     const allUsers = loadUsers();
     const visibleRoles = getVisibleRoles(currentUserRole);
+    const currentUser = getCurrentUser();
 
-    return allUsers.filter(user => visibleRoles.includes(user.role));
+    return allUsers.filter(user => {
+        // Check if user's role is in visible roles
+        if (!visibleRoles.includes(user.role)) {
+            return false;
+        }
+
+        // Super Admin can see all users including other Super Admins
+        if (currentUserRole === ROLES.SUPER_ADMIN) {
+            return true;
+        }
+
+        // For other roles: if the user has the same role as current user,
+        // only show if it's the current user themselves
+        if (user.role === currentUserRole) {
+            return user.id === currentUser.id;
+        }
+
+        // Show users with different roles (that are in visible roles)
+        return true;
+    });
 }
 
 /**
@@ -2531,6 +2996,14 @@ window.checkPasswordStrength = checkPasswordStrength;
 window.handleMyProfileUpdate = handleMyProfileUpdate;
 window.showJobDetails = showJobDetails;
 window.closeJobDetailsModal = closeJobDetailsModal;
+
+// OTP functions
+window.sendOTPEmail = sendOTPEmail;
+window.showOTPModal = showOTPModal;
+window.closeOTPModal = closeOTPModal;
+window.verifyOTP = verifyOTP;
+window.resendOTP = resendOTP;
+window.completePasswordChange = completePasswordChange;
 
 // User management functions
 window.initializeDefaultUsers = initializeDefaultUsers;

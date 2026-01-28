@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initialize Test Users</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+
+        .user-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .user-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+
+        .credentials {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .danger {
+            background: #dc3545;
+        }
+
+        .danger:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔧 Test Users Setup</h1>
+        <p>Click the button below to create test users for each role.</p>
+
+        <button onclick="createTestUsers()">Create Test Users</button>
+        <button class="danger" onclick="clearAllUsers()">Clear All Users</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script src="permissions.js"></script>
+    <script>
+        function createTestUsers() {
+            const testUsers = [
+                // Super Admins
+                {
+                    id: 'USER-SA-001',
+                    username: 'superadmin1',
+                    name: 'Super Admin One',
+                    email: 'superadmin1@slt.lk',
+                    password: 'admin123',
+                    role: ROLES.SUPER_ADMIN,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-SA-002',
+                    username: 'superadmin2',
+                    name: 'Super Admin Two',
+                    email: 'superadmin2@slt.lk',
+                    password: 'admin123',
+                    role: ROLES.SUPER_ADMIN,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+
+                // Developers
+                {
+                    id: 'USER-DEV-001',
+                    username: 'developer1',
+                    name: 'Developer One',
+                    email: 'dev1@slt.lk',
+                    password: 'dev123',
+                    role: ROLES.DEVELOPER,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-DEV-002',
+                    username: 'developer2',
+                    name: 'Developer Two',
+                    email: 'dev2@slt.lk',
+                    password: 'dev123',
+                    role: ROLES.DEVELOPER,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+
+                // Regional Managers
+                {
+                    id: 'USER-RM-001',
+                    username: 'rm1',
+                    name: 'Regional Manager One',
+                    email: 'rm1@slt.lk',
+                    password: 'rm123',
+                    role: ROLES.REGIONAL_MANAGER,
+                    region: 'Western',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-RM-002',
+                    username: 'rm2',
+                    name: 'Regional Manager Two',
+                    email: 'rm2@slt.lk',
+                    password: 'rm123',
+                    role: ROLES.REGIONAL_MANAGER,
+                    region: 'Central',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+
+                // Business Support Team
+                {
+                    id: 'USER-BST-001',
+                    username: 'bst1',
+                    name: 'Business Support One',
+                    email: 'bst1@slt.lk',
+                    password: 'bst123',
+                    role: ROLES.BUSINESS_SUPPORT,
+                    region: 'Western',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-BST-002',
+                    username: 'bst2',
+                    name: 'Business Support Two',
+                    email: 'bst2@slt.lk',
+                    password: 'bst123',
+                    role: ROLES.BUSINESS_SUPPORT,
+                    region: 'Central',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+
+                // Tech Lead Partners
+                {
+                    id: 'USER-TL-001',
+                    username: 'techlead1',
+                    name: 'Tech Lead One',
+                    email: 'tl1@slt.lk',
+                    password: 'tl123',
+                    role: ROLES.TECH_LEAD_PARTNER,
+                    region: 'Western',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-TL-002',
+                    username: 'techlead2',
+                    name: 'Tech Lead Two',
+                    email: 'tl2@slt.lk',
+                    password: 'tl123',
+                    role: ROLES.TECH_LEAD_PARTNER,
+                    region: 'Central',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+
+            // Save to localStorage
+            localStorage.setItem('platformUsers', JSON.stringify(testUsers));
+
+            // Display success message
+            let html = '<div class="success">';
+            html += '<h3>✓ Test Users Created Successfully!</h3>';
+            html += '<p>10 test users have been created. You can now test role-based visibility.</p>';
+            html += '</div>';
+
+            html += '<div class="user-list">';
+            html += '<h3>Test User Credentials:</h3>';
+
+            const roleGroups = {
+                'Super Admin': testUsers.filter(u => u.role === ROLES.SUPER_ADMIN),
+                'Developer': testUsers.filter(u => u.role === ROLES.DEVELOPER),
+                'Regional Manager': testUsers.filter(u => u.role === ROLES.REGIONAL_MANAGER),
+                'Business Support Team': testUsers.filter(u => u.role === ROLES.BUSINESS_SUPPORT),
+                'Tech Lead Partner': testUsers.filter(u => u.role === ROLES.TECH_LEAD_PARTNER)
+            };
+
+            for (const [roleName, users] of Object.entries(roleGroups)) {
+                html += `<h4>${roleName}</h4>`;
+                users.forEach(user => {
+                    html += `<div class="user-item">`;
+                    html += `<strong>${user.name}</strong><br>`;
+                    html += `Username: <span class="credentials">${user.username}</span> | `;
+                    html += `Password: <span class="credentials">${user.password}</span>`;
+                    html += `</div>`;
+                });
+            }
+
+            html += '</div>';
+            html += '<p><strong>Next Step:</strong> Open <a href="admin-dashboard.html">admin-dashboard.html</a> and login with any of the credentials above to test visibility.</p>';
+
+            document.getElementById('result').innerHTML = html;
+        }
+
+        function clearAllUsers() {
+            if (confirm('Are you sure you want to clear all users? This will remove all test data.')) {
+                localStorage.removeItem('platformUsers');
+                sessionStorage.clear();
+                document.getElementById('result').innerHTML = '<div class="success">All users cleared. Refresh the page to start over.</div>';
+            }
+        }
+    </script>
+</body>
+
+</html>

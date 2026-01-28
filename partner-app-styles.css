@@ -1453,3 +1453,368 @@ body {
     border-radius: 8px;
     box-shadow: var(--shadow-md);
 }
+
+/* ===================================
+   MOBILE RESPONSIVE STYLES
+   =================================== */
+
+/* Tablet Styles (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .job-details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 90%;
+        max-width: 600px;
+    }
+}
+
+/* Mobile Styles (max-width: 768px) */
+@media (max-width: 768px) {
+
+    /* Login & Mobile Global Fixes */
+    .login-container {
+        flex-direction: column;
+        justify-content: center;
+        padding: 24px;
+        min-height: 100vh;
+    }
+
+    .logo-container {
+        margin-bottom: 24px;
+        margin-right: 0;
+    }
+
+    /* Navbar adjustments */
+    .navbar {
+        padding: 12px 16px;
+    }
+
+    .navbar h2 {
+        font-size: 1.1rem;
+    }
+
+    .nav-logo {
+        height: 28px;
+    }
+
+    /* Dashboard content */
+    .dashboard-content {
+        padding: 16px;
+        padding-bottom: 100px;
+    }
+
+    /* Stats grid - single column on mobile */
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+    }
+
+    /* Filter tabs */
+    .filter-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .filter-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tab-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+
+    /* Job cards */
+    .job-card {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .job-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .job-status {
+        align-self: flex-start;
+    }
+
+    .job-title {
+        font-size: 1.1rem;
+    }
+
+    .job-location {
+        font-size: 0.85rem;
+    }
+
+    .job-details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* Action buttons */
+    .job-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .btn-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Bottom navigation - ensure it's always visible */
+    .bottom-nav {
+        display: flex !important;
+        padding: 8px 0;
+    }
+
+    .nav-item {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    .nav-item svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95%;
+        max-width: none;
+        max-height: 90vh;
+        border-radius: 16px;
+    }
+
+    .modal-header {
+        padding: 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    /* Job detail modal */
+    .job-detail-grid {
+        gap: 16px;
+    }
+
+    .job-detail-value {
+        font-size: 1rem;
+    }
+
+    /* Image upload modal */
+    .upload-area {
+        padding: 30px 16px;
+    }
+
+    .uploaded-images {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
+    }
+
+    .upload-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .upload-actions button {
+        width: 100%;
+    }
+
+    /* Earnings modal */
+    .earnings-summary {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .earnings-card {
+        padding: 16px;
+    }
+
+    /* Profile modal */
+    .profile-info-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .profile-section {
+        padding: 16px;
+    }
+
+    /* Login screen */
+    .login-card {
+        padding: 32px 24px;
+    }
+
+    .app-title {
+        font-size: 1.75rem;
+    }
+
+    .login-card h2 {
+        font-size: 1.5rem;
+    }
+
+    /* Adjust floating shapes for mobile */
+    .shape-1 {
+        width: 200px;
+        height: 200px;
+    }
+
+    .shape-2 {
+        width: 150px;
+        height: 150px;
+    }
+
+    .shape-3 {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* Small Mobile Styles (max-width: 480px) */
+@media (max-width: 480px) {
+
+    /* Further reduce padding */
+    .dashboard-content {
+        padding: 12px;
+        padding-bottom: 90px;
+    }
+
+    /* Stats cards */
+    .stat-card {
+        padding: 14px;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .stat-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    /* Job cards */
+    .job-card {
+        padding: 16px;
+    }
+
+    .job-title {
+        font-size: 1rem;
+    }
+
+    .detail-value {
+        font-size: 0.9rem;
+    }
+
+    /* Bottom navigation */
+    .nav-item {
+        padding: 6px 8px;
+        font-size: 0.7rem;
+        gap: 2px;
+    }
+
+    .nav-item svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Modals */
+    .modal-header,
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.2rem;
+    }
+
+    /* Buttons */
+    .btn-primary,
+    .btn-action {
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+
+    /* Login screen */
+    .login-card {
+        padding: 24px 20px;
+        border-radius: 20px;
+    }
+
+    .app-title {
+        font-size: 1.5rem;
+    }
+
+    .login-card h2 {
+        font-size: 1.3rem;
+        margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 24px;
+    }
+
+    .logo {
+        height: 48px;
+        margin-bottom: 16px;
+    }
+
+    .input-group input {
+        padding: 12px 14px 12px 44px;
+        font-size: 16px;
+        /* Prevent zoom on iOS */
+    }
+
+    /* Upload area */
+    .uploaded-images {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    }
+
+    /* Ensure touch targets are at least 44px */
+    .icon-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .tab-btn {
+        min-height: 44px;
+    }
+}

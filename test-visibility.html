@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Visibility Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            color: #2196F3;
+            margin-top: 0;
+        }
+        .user-list {
+            list-style: none;
+            padding: 0;
+        }
+        .user-list li {
+            padding: 8px;
+            margin: 4px 0;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+        }
+        .stats {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .pass {
+            color: #4CAF50;
+        }
+        .fail {
+            color: #f44336;
+        }
+        .verification {
+            background: #fff3e0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Role-Based User Visibility Test</h1>
+    <div id="results"></div>
+
+    <script src="permissions.js"></script>
+    <script>
+        // Sample users for testing
+        const testUsers = [
+            { id: '1', name: 'Super Admin 1', role: ROLES.SUPER_ADMIN, email: 'sa1@test.com' },
+            { id: '2', name: 'Super Admin 2', role: ROLES.SUPER_ADMIN, email: 'sa2@test.com' },
+            { id: '3', name: 'Developer 1', role: ROLES.DEVELOPER, email: 'dev1@test.com' },
+            { id: '4', name: 'Developer 2', role: ROLES.DEVELOPER, email: 'dev2@test.com' },
+            { id: '5', name: 'Regional Manager 1', role: ROLES.REGIONAL_MANAGER, email: 'rm1@test.com' },
+            { id: '6', name: 'Regional Manager 2', role: ROLES.REGIONAL_MANAGER, email: 'rm2@test.com' },
+            { id: '7', name: 'Business Support 1', role: ROLES.BUSINESS_SUPPORT, email: 'bst1@test.com' },
+            { id: '8', name: 'Business Support 2', role: ROLES.BUSINESS_SUPPORT, email: 'bst2@test.com' },
+            { id: '9', name: 'Tech Lead 1', role: ROLES.TECH_LEAD_PARTNER, email: 'tl1@test.com' },
+            { id: '10', name: 'Tech Lead 2', role: ROLES.TECH_LEAD_PARTNER, email: 'tl2@test.com' }
+        ];
+
+        // Save test users to localStorage
+        localStorage.setItem('platformUsers', JSON.stringify(testUsers));
+
+        function testRoleVisibility(roleName, roleId, userId, expectedCount, expectedRoles) {
+            // Set current user
+            const currentUser = testUsers.find(u => u.id === userId);
+            setCurrentUser(currentUser);
+
+            // Get visible users
+            const visibleUsers = getVisibleUsers(roleId);
+
+            // Create HTML output
+            let html = `<div class="test-section">`;
+            html += `<h2>Test: ${roleName} (ID: ${userId})</h2>`;
+            html += `<div class="stats">Visible Users: ${visibleUsers.length}/${testUsers.length}</div>`;
+            
+            // Check if count matches expected
+            const countMatch = visibleUsers.length === expectedCount;
+            html += `<div class="verification ${countMatch ? 'pass' : 'fail'}">`;
+            html += `${countMatch ? '✓' : '✗'} Expected ${expectedCount} users, got ${visibleUsers.length}`;
+            html += `</div>`;
+
+            // List visible users
+            html += `<ul class="user-list">`;
+            visibleUsers.forEach(user => {
+                html += `<li>${user.name} - <strong>${ROLE_NAMES[user.role]}</strong></li>`;
+            });
+            html += `</ul>`;
+
+            // Verify role restrictions
+            html += `<div class="verification">`;
+            html += `<strong>Verification:</strong><br>`;
+            
+            expectedRoles.forEach(check => {
+                const hasRole = visibleUsers.some(u => u.role === check.role && (check.notSelf ? u.id !== userId : true));
+                const shouldHave = check.should;
+                const passed = hasRole === shouldHave;
+                html += `<div class="${passed ? 'pass' : 'fail'}">`;
+                html += `${passed ? '✓' : '✗'} ${check.description}`;
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+            html += `</div>`;
+
+            return html;
+        }
+
+        // Run tests
+        let output = '';
+
+        // Test 1: Super Admin
+        output += testRoleVisibility(
+            'Super Admin',
+            ROLES.SUPER_ADMIN,
+            '1',
+            10,
+            [
+                { role: ROLES.SUPER_ADMIN, should: true, description: 'Can see other Super Admins' },
+                { role: ROLES.DEVELOPER, should: true, description: 'Can see Developers' },
+                { role: ROLES.REGIONAL_MANAGER, should: true, description: 'Can see Regional Managers' },
+                { role: ROLES.BUSINESS_SUPPORT, should: true, description: 'Can see Business Support Team' },
+                { role: ROLES.TECH_LEAD_PARTNER, should: true, description: 'Can see Tech Leads' }
+            ]
+        );
+
+        // Test 2: Developer
+        output += testRoleVisibility(
+            'Developer',
+            ROLES.DEVELOPER,
+            '3',
+            7,
+            [
+                { role: ROLES.SUPER_ADMIN, should: false, description: 'Cannot see Super Admins' },
+                { role: ROLES.DEVELOPER, should: true, notSelf: true, description: 'Cannot see other Developers (only self)' },
+                { role: ROLES.REGIONAL_MANAGER, should: true, description: 'Can see Regional Managers' },
+                { role: ROLES.BUSINESS_SUPPORT, should: true, description: 'Can see Business Support Team' },
+                { role: ROLES.TECH_LEAD_PARTNER, should: true, description: 'Can see Tech Leads' }
+            ]
+        );
+
+        // Test 3: Regional Manager
+        output += testRoleVisibility(
+            'Regional Manager',
+            ROLES.REGIONAL_MANAGER,
+            '5',
+            5,
+            [
+                { role: ROLES.SUPER_ADMIN, should: false, description: 'Cannot see Super Admins' },
+                { role: ROLES.DEVELOPER, should: false, description: 'Cannot see Developers' },
+                { role: ROLES.REGIONAL_MANAGER, should: true, notSelf: true, description: 'Cannot see other Regional Managers (only self)' },
+                { role: ROLES.BUSINESS_SUPPORT, should: true, description: 'Can see Business Support Team' },
+                { role: ROLES.TECH_LEAD_PARTNER, should: true, description: 'Can see Tech Leads' }
+            ]
+        );
+
+        // Test 4: Business Support Team
+        output += testRoleVisibility(
+            'Business Support Team',
+            ROLES.BUSINESS_SUPPORT,
+            '7',
+            3,
+            [
+                { role: ROLES.SUPER_ADMIN, should: false, description: 'Cannot see Super Admins' },
+                { role: ROLES.DEVELOPER, should: false, description: 'Cannot see Developers' },
+                { role: ROLES.REGIONAL_MANAGER, should: false, description: 'Cannot see Regional Managers' },
+                { role: ROLES.BUSINESS_SUPPORT, should: true, notSelf: true, description: 'Cannot see other Business Support (only self)' },
+                { role: ROLES.TECH_LEAD_PARTNER, should: true, description: 'Can see Tech Leads' }
+            ]
+        );
+
+        document.getElementById('results').innerHTML = output;
+
+        // Log to console as well
+        console.log('Role visibility tests completed. Check the page for results.');
+    </script>
+</body>
+</html>

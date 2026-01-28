@@ -782,6 +782,63 @@
     transform: scale(1.02);
 }
 
+/* === OTP VERIFICATION MODAL STYLES === */
+
+/* OTP Input Field */
+#otpInput {
+    text-align: center;
+    font-size: 1.8rem;
+    letter-spacing: 0.8rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    padding: 16px 24px;
+    border: 2px solid var(--light-gray);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: var(--bg-light);
+}
+
+#otpInput:focus {
+    border-color: var(--slt-blue);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+#otpInput::placeholder {
+    letter-spacing: normal;
+    font-size: 0.9rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: normal;
+}
+
+/* OTP Timer */
+#otpTimer {
+    font-size: 1.2rem;
+    font-weight: 700;
+    transition: color 0.3s ease;
+}
+
+/* Resend OTP Button */
+#resendOTPBtn {
+    color: var(--slt-blue);
+    font-weight: 600;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+}
+
+#resendOTPBtn:hover {
+    color: var(--slt-blue-dark);
+    text-decoration: underline;
+}
+
+/* OTP Email Display */
+#otpEmailDisplay {
+    color: var(--slt-blue);
+    font-weight: 600;
+}
+
+
 .image-placeholder svg {
     color: var(--gray);
 }
@@ -1538,57 +1595,213 @@
     font-weight: 500;
 }
 
-.password-strength small.weak {
-    color: var(--status-rejected);
-}
+/* === MOBILE RESPONSIVE IMPLEMENTATION === */
 
-.password-strength small.medium {
-    color: var(--accent-orange);
-}
-
-.password-strength small.strong {
-    color: var(--status-approved);
-}
-
-/* Password Requirements */
-.password-requirements {
-    background: rgba(59, 130, 246, 0.1);
-    border-left: 3px solid var(--slt-blue);
-    padding: 12px 16px;
+/* Hamburger Menu Button */
+.btn-menu {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--dark);
+    cursor: pointer;
+    padding: 8px;
     border-radius: 8px;
-    margin-top: 16px;
+    margin-right: 12px;
 }
 
-.password-requirements small {
-    color: var(--slt-blue);
-    font-weight: 500;
+.btn-menu:hover {
+    background: var(--light-gray);
 }
 
-/* Form Section */
-.form-section {
-    margin-top: 32px;
-    padding-top: 32px;
-    border-top: 2px solid var(--light-gray);
+.header-title-group {
+    display: flex;
+    align-items: center;
 }
 
-.form-section h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
+/* Sidebar Overlay */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-/* Responsive Profile Modal */
-@media (max-width: 768px) {
-    .profile-photo-upload {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 100;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     }
 
-    .photo-upload-controls {
-        align-items: center;
+    .sidebar.open {
+        transform: translateX(0);
     }
 
-    .photo-upload-controls .btn-secondary {
+    .main-content {
+        margin-left: 0;
         width: 100%;
+    }
+
+    .btn-menu {
+        display: block;
+    }
+
+    .stat-card-admin {
+        padding: 20px;
+    }
+
+    .stat-value-admin {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 16px;
+    }
+
+    .content-header {
+        margin-bottom: 24px;
+        flex-direction: row;
+        /* Keep hamburger next to title */
+        align-items: center;
+    }
+
+    .content-header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 4px;
+    }
+
+    .content-header p {
+        font-size: 0.85rem;
+    }
+
+    .stats-grid-admin {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .approval-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .table-container {
+        padding: 16px;
+    }
+
+    /* Modify job list header for mobile */
+    .jobs-list-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .jobs-search {
+        max-width: none;
+    }
+
+    .jobs-filter-tabs {
+        overflow-x: auto;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-tab {
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .stat-card-admin {
+        padding: 16px;
+    }
+
+    .stat-icon-admin {
+        width: 48px;
+        height: 48px;
+    }
+
+    .stat-value-admin {
+        font-size: 1.75rem;
+    }
+
+    .card-header h3 {
+        font-size: 1.1rem;
+    }
+
+    /* Make forms single column */
+    .form-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Better touch targets */
+    .btn-create,
+    .btn-view-job,
+    .btn-delete-job {
+        min-height: 44px;
+    }
+
+    /* Admin Login Screen Mobile Optimizations */
+    .login-container {
+        padding: 16px;
+    }
+
+    .login-card {
+        padding: 24px 20px;
+        border-radius: 20px;
+    }
+
+    .app-title {
+        font-size: 1.5rem;
+    }
+
+    .login-card h2 {
+        font-size: 1.3rem;
+    }
+
+    .input-group input {
+        font-size: 16px;
+        /* Prevent zoom on iOS */
+    }
+}
+
+/* === MOBILE CREATE JOB BUTTON === */
+/* Default: Hide mobile button */
+.btn-create-mobile {
+    display: none;
+}
+
+/* Mobile View: Hide header button, allow mobile button to be shown by JS */
+@media (max-width: 768px) {
+
+    /* Hide the header button explicitly */
+    .content-header .btn-create {
+        display: none !important;
+    }
+
+    /* WE DO NOT force display:none on .btn-create-mobile here.
+       We let JS toggle it to display:flex when appropriate.
+       The default display:none above handles the initial state.
+    */
+}
+
+/* Desktop View: Ensure mobile button is hidden */
+@media (min-width: 769px) {
+    .btn-create-mobile {
+        display: none !important;
     }
 }

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Visibility Verification Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .test-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .credential {
+            background: #edf2f7;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 5px 0;
+        }
+
+        .expected-list {
+            margin-top: 15px;
+        }
+
+        .expected-list h4 {
+            color: #2d3748;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+
+        .expected-list ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .expected-list li {
+            padding: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .expected-list li::before {
+            content: "✓ ";
+            color: #48bb78;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .not-visible li::before {
+            content: "✗ ";
+            color: #f56565;
+        }
+
+        .count {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+        }
+
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border-left: 4px solid #48bb78;
+        }
+
+        .status.info {
+            background: #bee3f8;
+            color: #2c5282;
+            border-left: 4px solid #4299e1;
+        }
+
+        .instructions {
+            background: #fef5e7;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+            margin-bottom: 30px;
+        }
+
+        .instructions h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #78350f;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔐 Role-Based Visibility Verification</h1>
+        <p class="subtitle">Test and verify user visibility rules for each role</p>
+
+        <div class="instructions">
+            <h3>📋 Quick Start Instructions</h3>
+            <ol>
+                <li>Click "Create Test Users" below to set up test data</li>
+                <li>Open <a href="admin-dashboard.html" target="_blank">admin-dashboard.html</a> in a new tab</li>
+                <li>Login with any of the credentials shown below</li>
+                <li>Navigate to "User Management" section</li>
+                <li>Verify the visible users match the expected list for that role</li>
+                <li>Repeat for each role to verify all visibility rules</li>
+            </ol>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+            <button class="btn" onclick="createTestUsers()">Create Test Users</button>
+            <button class="btn btn-secondary" onclick="verifyCurrentRole()">Verify Current Session</button>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="section">
+            <h2>Test Scenarios</h2>
+
+            <div class="test-grid">
+                <!-- Super Admin Test -->
+                <div class="test-card">
+                    <h3>🔴 Super Admin Test</h3>
+                    <div class="credential">Username: superadmin1</div>
+                    <div class="credential">Password: admin123</div>
+
+                    <div class="expected-list">
+                        <h4>Expected to See:</h4>
+                        <ul>
+                            <li>Super Admin One (self)</li>
+                            <li>Super Admin Two</li>
+                            <li>Developer One</li>
+                            <li>Developer Two</li>
+                            <li>Regional Manager One</li>
+                            <li>Regional Manager Two</li>
+                            <li>Business Support One</li>
+                            <li>Business Support Two</li>
+                            <li>Tech Lead One</li>
+                            <li>Tech Lead Two</li>
+                        </ul>
+                        <span class="count">Total: 10 users (ALL)</span>
+                    </div>
+                </div>
+
+                <!-- Developer Test -->
+                <div class="test-card">
+                    <h3>🔵 Developer Test</h3>
+                    <div class="credential">Username: developer1</div>
+                    <div class="credential">Password: dev123</div>
+
+                    <div class="expected-list">
+                        <h4>Expected to See:</h4>
+                        <ul>
+                            <li>Developer One (self only)</li>
+                            <li>Regional Manager One</li>
+                            <li>Regional Manager Two</li>
+                            <li>Business Support One</li>
+                            <li>Business Support Two</li>
+                            <li>Tech Lead One</li>
+                            <li>Tech Lead Two</li>
+                        </ul>
+                        <span class="count">Total: 7 users</span>
+
+                        <h4 style="margin-top: 15px;">Should NOT See:</h4>
+                        <ul class="not-visible">
+                            <li>Developer Two</li>
+                            <li>Super Admin One</li>
+                            <li>Super Admin Two</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Regional Manager Test -->
+                <div class="test-card">
+                    <h3>🟢 Regional Manager Test</h3>
+                    <div class="credential">Username: rm1</div>
+                    <div class="credential">Password: rm123</div>
+
+                    <div class="expected-list">
+                        <h4>Expected to See:</h4>
+                        <ul>
+                            <li>Regional Manager One (self only)</li>
+                            <li>Business Support One</li>
+                            <li>Business Support Two</li>
+                            <li>Tech Lead One</li>
+                            <li>Tech Lead Two</li>
+                        </ul>
+                        <span class="count">Total: 5 users</span>
+
+                        <h4 style="margin-top: 15px;">Should NOT See:</h4>
+                        <ul class="not-visible">
+                            <li>Regional Manager Two</li>
+                            <li>Developer One</li>
+                            <li>Developer Two</li>
+                            <li>Super Admin One</li>
+                            <li>Super Admin Two</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Business Support Test -->
+                <div class="test-card">
+                    <h3>🟡 Business Support Test</h3>
+                    <div class="credential">Username: bst1</div>
+                    <div class="credential">Password: bst123</div>
+
+                    <div class="expected-list">
+                        <h4>Expected to See:</h4>
+                        <ul>
+                            <li>Business Support One (self only)</li>
+                            <li>Tech Lead One</li>
+                            <li>Tech Lead Two</li>
+                        </ul>
+                        <span class="count">Total: 3 users</span>
+
+                        <h4 style="margin-top: 15px;">Should NOT See:</h4>
+                        <ul class="not-visible">
+                            <li>Business Support Two</li>
+                            <li>Regional Manager One</li>
+                            <li>Regional Manager Two</li>
+                            <li>Developer One</li>
+                            <li>Developer Two</li>
+                            <li>Super Admin One</li>
+                            <li>Super Admin Two</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="permissions.js"></script>
+    <script>
+        function createTestUsers() {
+            const testUsers = [
+                // Super Admins
+                {
+                    id: 'USER-SA-001',
+                    username: 'superadmin1',
+                    name: 'Super Admin One',
+                    email: 'superadmin1@slt.lk',
+                    password: 'admin123',
+                    role: ROLES.SUPER_ADMIN,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-SA-002',
+                    username: 'superadmin2',
+                    name: 'Super Admin Two',
+                    email: 'superadmin2@slt.lk',
+                    password: 'admin123',
+                    role: ROLES.SUPER_ADMIN,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                // Developers
+                {
+                    id: 'USER-DEV-001',
+                    username: 'developer1',
+                    name: 'Developer One',
+                    email: 'dev1@slt.lk',
+                    password: 'dev123',
+                    role: ROLES.DEVELOPER,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-DEV-002',
+                    username: 'developer2',
+                    name: 'Developer Two',
+                    email: 'dev2@slt.lk',
+                    password: 'dev123',
+                    role: ROLES.DEVELOPER,
+                    region: null,
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                // Regional Managers
+                {
+                    id: 'USER-RM-001',
+                    username: 'rm1',
+                    name: 'Regional Manager One',
+                    email: 'rm1@slt.lk',
+                    password: 'rm123',
+                    role: ROLES.REGIONAL_MANAGER,
+                    region: 'Western Province',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-RM-002',
+                    username: 'rm2',
+                    name: 'Regional Manager Two',
+                    email: 'rm2@slt.lk',
+                    password: 'rm123',
+                    role: ROLES.REGIONAL_MANAGER,
+                    region: 'Central Province',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                // Business Support Team
+                {
+                    id: 'USER-BST-001',
+                    username: 'bst1',
+                    name: 'Business Support One',
+                    email: 'bst1@slt.lk',
+                    password: 'bst123',
+                    role: ROLES.BUSINESS_SUPPORT,
+                    region: 'Western Province',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-BST-002',
+                    username: 'bst2',
+                    name: 'Business Support Two',
+                    email: 'bst2@slt.lk',
+                    password: 'bst123',
+                    role: ROLES.BUSINESS_SUPPORT,
+                    region: 'Central Province',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                // Tech Lead Partners
+                {
+                    id: 'USER-TL-001',
+                    username: 'techlead1',
+                    name: 'Tech Lead One',
+                    email: 'tl1@slt.lk',
+                    password: 'tl123',
+                    role: ROLES.TECH_LEAD_PARTNER,
+                    region: 'Western Province',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'USER-TL-002',
+                    username: 'techlead2',
+                    name: 'Tech Lead Two',
+                    email: 'tl2@slt.lk',
+                    password: 'tl123',
+                    role: ROLES.TECH_LEAD_PARTNER,
+                    region: 'Central Province',
+                    createdBy: 'SYSTEM',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+
+            localStorage.setItem('platformUsers', JSON.stringify(testUsers));
+
+            document.getElementById('status').innerHTML = `
+                <div class="status success">
+                    <strong>✅ Success!</strong> 10 test users have been created.<br>
+                    You can now open <a href="admin-dashboard.html" target="_blank">admin-dashboard.html</a> and login with any of the credentials shown above.
+                </div>
+            `;
+        }
+
+        function verifyCurrentRole() {
+            const currentUser = getCurrentUser();
+
+            if (!currentUser) {
+                document.getElementById('status').innerHTML = `
+                    <div class="status info">
+                        <strong>ℹ️ No Active Session</strong><br>
+                        Please login to admin-dashboard.html first, then come back here to verify.
+                    </div>
+                `;
+                return;
+            }
+
+            const allUsers = JSON.parse(localStorage.getItem('platformUsers') || '[]');
+            const visibleUsers = allUsers.filter(user => {
+                const visibleRoles = getVisibleRoles(currentUser.role);
+                if (!visibleRoles.includes(user.role)) {
+                    return false;
+                }
+                if (currentUser.role === ROLES.SUPER_ADMIN) {
+                    return true;
+                }
+                if (user.role === currentUser.role) {
+                    return user.id === currentUser.id;
+                }
+                return true;
+            });
+
+            const roleName = ROLE_NAMES[currentUser.role];
+
+            document.getElementById('status').innerHTML = `
+                <div class="status info">
+                    <strong>👤 Current User:</strong> ${currentUser.name} (${roleName})<br>
+                    <strong>👥 Visible Users:</strong> ${visibleUsers.length} out of ${allUsers.length} total users<br><br>
+                    <strong>Users you can see:</strong><br>
+                    ${visibleUsers.map(u => `• ${u.name} (${ROLE_NAMES[u.role]})`).join('<br>')}
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

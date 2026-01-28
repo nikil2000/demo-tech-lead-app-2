@@ -107,7 +107,7 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <!-- TODO: Replace 'slt-logo-small.png' with actual SLT logo (2:1 ratio) -->
-                <img src="slt-logo-small.png" alt="SLT" class="sidebar-logo">
+                <img src="slt-logo.png" alt="SLT" class="sidebar-logo">
                 <h3>Admin Panel</h3>
             </div>
 
@@ -209,9 +209,19 @@
         <div class="main-content">
             <!-- Header -->
             <div class="content-header">
-                <div>
-                    <h1 id="sectionTitle">Dashboard Overview</h1>
-                    <p id="sectionSubtitle">Monitor and manage all tech-lead partner activities</p>
+                <div class="header-title-group">
+                    <button class="btn-menu" onclick="toggleAdminSidebar()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 id="sectionTitle">Dashboard Overview</h1>
+                        <p id="sectionSubtitle">Monitor and manage all tech-lead partner activities</p>
+                    </div>
                 </div>
                 <button class="btn-create" id="createJobBtn" onclick="showCreateJobModal()" style="display: none;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -221,6 +231,8 @@
                     Create New Job
                 </button>
             </div>
+
+            <div class="sidebar-overlay" onclick="toggleAdminSidebar()"></div>
 
             <!-- Overview Section -->
             <div class="content-section active" id="overviewSection">
@@ -463,6 +475,14 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Mobile-Only Create Job Button -->
+                <button class="btn-create btn-create-mobile" id="createJobBtnMobile" onclick="showCreateJobModal()" style="display: none; margin-top: 16px; width: 100%; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Create New Job
+                </button>
             </div>
 
             <!-- Approval Section -->
@@ -1239,6 +1259,96 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal -->
+    <div class="modal" id="otpVerificationModal">
+        <div class="modal-overlay" onclick="closeOTPModal()"></div>
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2>Verify OTP</h2>
+                <button class="modal-close" onclick="closeOTPModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- DEMO NOTICE -->
+                <div class="demo-notice"
+                    style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <div>
+                            <p style="margin: 0; font-size: 0.85rem; font-weight: 600; color: #92400E;">DEMO MODE</p>
+                            <p style="margin: 4px 0 0 0; font-size: 0.75rem; color: #78350F;">In production, OTP would
+                                be sent to your email. For testing, the code is displayed below.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OTP CODE DISPLAY (DEMO ONLY) -->
+                <div id="demoOtpDisplay"
+                    style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); border: 2px dashed #3B82F6; padding: 16px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+                    <p
+                        style="margin: 0 0 8px 0; font-size: 0.8rem; font-weight: 600; color: #1E40AF; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Your OTP Code</p>
+                    <p id="displayedOtpCode"
+                        style="margin: 0; font-size: 2rem; font-weight: 700; color: #1E3A8A; font-family: 'Courier New', monospace; letter-spacing: 0.3rem;">
+                        ------</p>
+                    <p style="margin: 8px 0 0 0; font-size: 0.7rem; color: #3730A3;">Copy this code and enter it below
+                    </p>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"
+                        style="margin: 0 auto;">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                </div>
+                <p style="text-align: center; color: var(--dark); font-size: 1rem; margin-bottom: 8px;">
+                    We've sent a verification code to your email
+                </p>
+                <p style="text-align: center; color: var(--gray); font-size: 0.9rem; margin-bottom: 24px;">
+                    <strong id="otpEmailDisplay"></strong>
+                </p>
+                <p style="text-align: center; color: var(--gray); font-size: 0.85rem; margin-bottom: 16px;">
+                    Please enter the 6-digit code to change your password
+                </p>
+
+                <div class="form-group">
+                    <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6"
+                        style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-family: monospace; font-weight: bold;"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p style="color: var(--gray); font-size: 0.9rem;">
+                        Time remaining: <strong id="otpTimer" style="color: var(--slt-blue);">5:00</strong>
+                    </p>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button type="button" class="btn-text" onclick="resendOTP()" id="resendOTPBtn">
+                        Resend OTP
+                    </button>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeOTPModal()">Cancel</button>
+                    <button type="button" class="btn-primary" onclick="verifyOTP()">
+                        <span>Verify</span>
+                        <div class="btn-shine"></div>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
